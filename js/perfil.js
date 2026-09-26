@@ -65,9 +65,26 @@ async function init() {
   wireEvents();
   wireInterestAutocomplete();
   wireLogout();
+  wireApiErrorSafetyNet();
 
   interestCatalogCache = await DataService.listInterestAreaCatalog();
   await renderAll();
+}
+
+/** Rede de segurança para chamadas à API que falharem sem um try/catch
+ * dedicado (ex.: token expirado no meio da sessão) — sem isso, o erro
+ * vira uma unhandled promise rejection silenciosa e o usuário não
+ * entende por que a ação não salvou. */
+function wireApiErrorSafetyNet() {
+  window.addEventListener("unhandledrejection", (event) => {
+    console.error(event.reason);
+    if (!AuthService.getCurrentUser()) {
+      window.location.href = "login.html";
+      return;
+    }
+    const message = (event.reason && event.reason.message) || "Ocorreu um erro ao salvar. Tente novamente.";
+    UI.showToast(els["toast"], message, true);
+  });
 }
 
 function wireLogout() {
