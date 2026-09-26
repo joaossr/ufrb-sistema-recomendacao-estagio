@@ -190,25 +190,6 @@ function getProjectOptionsForCourse(centerId, courseName) {
   };
 }
 
-/** O Lattes costuma registrar o nome do curso sem o prefixo de grau —
- * "Ciências Exatas e Tecnológicas" em vez de "Bacharelado em Ciências
- * Exatas e Tecnológicas" — porque o grau já vem separado (tag GRADUACAO).
- * Usado para o auto-preenchimento de Curso na importação do Lattes:
- * tenta bater o nome exato primeiro e, se não achar, tenta de novo
- * ignorando esse prefixo nos nossos nomes padronizados. */
-const COURSE_DEGREE_PREFIX = /^bacharelado( interdisciplinar)? em\s+/i;
-
-function findStandardCourseByName(courseName) {
-  const name = (courseName || "").trim().toLowerCase();
-  if (!name) return null;
-
-  let match = UFRB_COURSES.find((c) => c.name.toLowerCase() === name);
-  if (match) return match;
-
-  match = UFRB_COURSES.find((c) => c.name.toLowerCase().replace(COURSE_DEGREE_PREFIX, "") === name);
-  return match || null;
-}
-
 /** Ícone SVG de "x" para os botões de remover chip/tag — substitui o
  * caractere "✕" (que alguns sistemas renderem como emoji) por um
  * vetor consistente com os demais ícones do site. */

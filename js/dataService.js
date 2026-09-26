@@ -168,6 +168,22 @@ const DataService = {
     return { profile, technologies, projects, interests };
   },
 
+  /** Envia o XML do Lattes para o backend processar (Fase 4) e
+   * retorna a prévia (nome, ID Lattes, formações, idiomas, formações
+   * complementares) — nada é gravado no banco ainda. */
+  async previewLattes(file) {
+    const { ok, data, networkError } = await AuthService.apiUpload("/perfil/lattes/preview", file);
+    if (networkError) throw new Error("Não foi possível conectar ao servidor. Tente novamente.");
+    if (!ok) throw new Error((data && data.detail) || "Não foi possível processar o arquivo do Lattes.");
+    return data;
+  },
+
+  /** Confirma a importação: grava no perfil os dados escolhidos pelo
+   * usuário na prévia. Retorna { perfil, course_matched }. */
+  confirmarLattes(payload) {
+    return apiSend("/perfil/lattes/confirmar", "POST", payload);
+  },
+
   /**
    * USO EXCLUSIVO DO PAINEL ADMINISTRATIVO.
    * A Fase 3 ainda não trouxe um endpoint de "listar todos os alunos"

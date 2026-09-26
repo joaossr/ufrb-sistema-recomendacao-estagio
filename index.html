@@ -408,7 +408,7 @@
             <button id="btn-select-lattes-file" type="button" class="btn btn-secondary btn-sm">Selecionar arquivo</button>
             <input id="lattes-file-input" type="file" accept=".xml" hidden />
           </div>
-          <div class="notice-box">O arquivo é lido inteiramente no seu navegador: nada é enviado a servidores do Lattes/CNPq. Serão extraídos apenas nome completo, ID Lattes, formação acadêmica e idiomas.</div>
+          <div class="notice-box">O arquivo é processado pelo servidor do próprio sistema (nunca por servidores do Lattes/CNPq). Serão extraídos apenas nome completo, ID Lattes, formação acadêmica, idiomas e formações complementares — nada é gravado até você confirmar.</div>
         </div>
 
         <!-- Estado 2: extraindo -->
@@ -443,6 +443,11 @@
             <span class="lattes-preview-label">Idiomas</span>
             <div id="lattes-preview-languages"></div>
           </div>
+
+          <div id="lattes-preview-complementary-block" class="lattes-preview-block" hidden>
+            <span class="lattes-preview-label">Formações complementares</span>
+            <div id="lattes-preview-complementary"></div>
+          </div>
         </div>
       </div>
       <div class="modal__footer">
@@ -457,7 +462,6 @@
   <script src="js/layout.js"></script>
   <script src="js/adminMockProfiles.js"></script>
   <script src="js/dataService.js"></script>
-  <script src="js/lattesParser.js"></script>
   <script src="js/combobox.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/perfil.js"></script>

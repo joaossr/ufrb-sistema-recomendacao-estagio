@@ -69,8 +69,43 @@ async function authApiFetch(path, { method = "GET", body } = {}) {
   return { ok: response.ok, status: response.status, data };
 }
 
+/** Upload de arquivo (multipart/form-data) — não pode usar authApiFetch
+ * porque ali o Content-Type é sempre "application/json"; aqui o
+ * navegador precisa montar o Content-Type com boundary sozinho. */
+async function authApiUpload(path, file, fieldName = "file") {
+  const session = authReadSession();
+  const headers = {};
+  if (session && session.token) {
+    headers["Authorization"] = "Bearer " + session.token;
+  }
+
+  const formData = new FormData();
+  formData.append(fieldName, file);
+
+  let response;
+  try {
+    response = await fetch(API_BASE_URL + path, { method: "POST", headers, body: formData });
+  } catch (err) {
+    return { ok: false, status: 0, data: null, networkError: true };
+  }
+
+  let data = null;
+  try {
+    data = await response.json();
+  } catch (err) {
+    data = null;
+  }
+
+  if (response.status === 401) {
+    authWriteSession(null);
+  }
+
+  return { ok: response.ok, status: response.status, data };
+}
+
 const AuthService = {
   apiFetch: authApiFetch,
+  apiUpload: authApiUpload,
 
   async register({ matricula, email, password, confirmPassword }) {
     if (!password || password.length < 6) {

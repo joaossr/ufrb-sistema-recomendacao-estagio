@@ -41,6 +41,7 @@ function cacheElements() {
     "lattes-upload-state", "lattes-loading-state", "lattes-preview-state",
     "lattes-preview-filename", "lattes-preview-name", "lattes-preview-id",
     "lattes-preview-formations", "lattes-preview-languages-block", "lattes-preview-languages",
+    "lattes-preview-complementary-block", "lattes-preview-complementary",
     "lattes-apply-btn",
     "lattes-identity-block", "lattes-identity-name", "lattes-identity-meta",
     "btn-save-profile", "btn-cancel", "save-hint",
@@ -672,8 +673,8 @@ async function atualizarProgresso() {
 }
 
 /* ---------------------------------------------------------------------
- * Importação Lattes — leitura real do XML no navegador (sem backend,
- * sem chamadas ao Lattes/CNPq: apenas o arquivo local é lido).
+ * Importação Lattes — Fase 4: o XML é enviado ao backend, que processa
+ * e devolve a prévia; nada é gravado até o usuário confirmar.
  * ------------------------------------------------------------------- */
 function resetLattesModal() {
   lattesParsedData = null;
@@ -707,23 +708,18 @@ async function handleLattesFile(file) {
   els["lattes-preview-state"].hidden = true;
 
   try {
-    const xmlText = await LattesParser.readFile(file);
-    const result = LattesParser.parse(xmlText);
-    if (!result.ok) {
-      showLattesError(result.error);
-      return;
-    }
+    const result = await DataService.previewLattes(file);
     lattesParsedData = result;
     showLattesPreview(file, result);
   } catch (err) {
-    showLattesError("Não foi possível ler o arquivo selecionado.");
+    showLattesError(err.message || "Não foi possível processar o arquivo selecionado.");
   }
 }
 
 function showLattesPreview(file, data) {
   els["lattes-preview-filename"].textContent = file.name;
-  els["lattes-preview-name"].textContent = data.fullName || "Não identificado no arquivo";
-  els["lattes-preview-id"].textContent = data.lattesId || "Não identificado no arquivo";
+  els["lattes-preview-name"].textContent = data.full_name || "Não identificado no arquivo";
+  els["lattes-preview-id"].textContent = data.lattes_id || "Não identificado no arquivo";
 
   els["lattes-preview-formations"].innerHTML = "";
   if (data.formations.length === 0) {
@@ -734,7 +730,7 @@ function showLattesPreview(file, data) {
   } else {
     const preferredIndex = Math.max(
       0,
-      data.formations.findIndex((f) => f.levelTag === "GRADUACAO")
+      data.formations.findIndex((f) => f.level_tag === "GRADUACAO")
     );
     data.formations.forEach((formation, index) => {
       const label = document.createElement("label");
@@ -763,7 +759,7 @@ function showLattesPreview(file, data) {
 
       const metaParts = [];
       if (formation.status) metaParts.push("Status: " + formation.status);
-      if (formation.startYear) metaParts.push("Início: " + formation.startYear);
+      if (formation.start_year) metaParts.push("Início: " + formation.start_year);
       if (metaParts.length) {
         const meta = document.createElement("div");
         meta.className = "lattes-formation-option__meta";
@@ -807,6 +803,31 @@ function showLattesPreview(file, data) {
     els["lattes-preview-languages"].appendChild(card);
   });
 
+  const complementaryFormations = data.complementary_formations || [];
+  els["lattes-preview-complementary"].innerHTML = "";
+  els["lattes-preview-complementary-block"].hidden = complementaryFormations.length === 0;
+  complementaryFormations.forEach((item) => {
+    const card = document.createElement("div");
+    card.className = "lattes-language-card";
+
+    const name = document.createElement("div");
+    name.className = "lattes-language-card__name";
+    name.textContent = item.nome;
+    card.appendChild(name);
+
+    const meta = document.createElement("div");
+    meta.className = "lattes-language-card__skills";
+    const metaParts = [item.instituicao, item.ano].filter(Boolean);
+    if (metaParts.length) {
+      const span = document.createElement("span");
+      span.textContent = metaParts.join(" · ");
+      meta.appendChild(span);
+    }
+    card.appendChild(meta);
+
+    els["lattes-preview-complementary"].appendChild(card);
+  });
+
   els["lattes-loading-state"].hidden = true;
   els["lattes-preview-state"].hidden = false;
   els["lattes-apply-btn"].hidden = false;
@@ -817,50 +838,26 @@ async function aplicarImportacaoLattes() {
   if (!lattesParsedData) return;
 
   // O e-mail institucional e a matrícula já vêm da conta (ver cadastro.html)
-  // e nunca são pedidos de novo aqui — o Lattes só acrescenta nome, ID
-  // Lattes, formação e idiomas, sem sobrescrever nada que o estudante
-  // já tenha preenchido.
+  // e nunca são pedidos de novo aqui — o backend também nunca sobrescreve
+  // esses dois campos (ver backend/app/routers/lattes.py).
   const chosenInput = els["lattes-preview-formations"].querySelector(
     "input[name='lattes-formation-choice']:checked"
   );
   const chosen = chosenInput ? lattesParsedData.formations[Number(chosenInput.value)] : null;
 
-  const profileChanges = {
-    full_name: lattesParsedData.fullName || "",
-    lattes_id: lattesParsedData.lattesId || "",
+  const { course_matched } = await DataService.confirmarLattes({
+    full_name: lattesParsedData.full_name || "",
+    lattes_id: lattesParsedData.lattes_id || "",
+    chosen_formation: chosen || null,
     languages: lattesParsedData.languages || [],
-  };
-
-  let courseNotStandardized = false;
-
-  if (chosen) {
-    profileChanges.institution = chosen.institution;
-    profileChanges.education_level = chosen.level;
-    profileChanges.education_status = chosen.status || "";
-    profileChanges.education_start_year = chosen.startYear || "";
-    profileChanges.education_end_year = chosen.endYear || "";
-
-    // O curso do Lattes é texto livre (às vezes sem o prefixo de grau,
-    // ex.: "Ciências Exatas e Tecnológicas" em vez de "Bacharelado em
-    // Ciências Exatas e Tecnológicas"); só aceitamos como seleção válida
-    // se bater com um curso padronizado da lista (o campo Curso exige
-    // seleção — não salva variações digitadas/importadas livremente).
-    const match = findStandardCourseByName(chosen.course);
-    if (match) {
-      profileChanges.course = match.name;
-      profileChanges.course_id = match.id;
-    } else {
-      courseNotStandardized = true;
-    }
-  }
-
-  await DataService.saveProfile(profileChanges);
+    complementary_formations: lattesParsedData.complementary_formations || [],
+  });
 
   fecharModal(els["lattes-modal"]);
   resetLattesModal();
   await renderAll();
 
-  if (courseNotStandardized) {
+  if (chosen && !course_matched) {
     UI.showToast(
       els["toast"],
       "Dados do Lattes aplicados. O curso identificado não está na lista padronizada — selecione seu curso manualmente.",
