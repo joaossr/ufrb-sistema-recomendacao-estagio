@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Criar conta · Sistema de Recomendação de Estágio · UFRB</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    svg { fill: none; stroke: currentColor; }
+    svg:not([width]) { width: 20px; height: 20px; }
+  </style>
+</head>
+<body>
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-card__brand">
+        <img src="assets/logo-ufrb.png" alt="Logotipo da UFRB" />
+        <span>Universidade Federal do Recôncavo da Bahia<br />Sistema de Recomendação de Estágio</span>
+      </div>
+
+      <h1 class="auth-card__title">Criar conta</h1>
+      <p class="auth-card__subtitle">Cadastre-se com sua matrícula e e-mail institucional para começar a preencher seu perfil.</p>
+
+      <form id="cadastro-form" class="auth-form" novalidate>
+        <p id="cadastro-error" class="auth-form__error" hidden></p>
+
+        <div class="field">
+          <label for="cadastro-matricula">Matrícula <span class="required">*</span></label>
+          <input id="cadastro-matricula" type="text" placeholder="Número de matrícula na UFRB" autocomplete="username" required />
+        </div>
+
+        <div class="field">
+          <label for="cadastro-email">E-mail institucional <span class="required">*</span></label>
+          <input id="cadastro-email" type="email" placeholder="nome@ufrb.edu.br" autocomplete="email" required />
+        </div>
+
+        <div class="field">
+          <label for="cadastro-password">Senha <span class="required">*</span></label>
+          <input id="cadastro-password" type="password" placeholder="Mínimo de 6 caracteres" autocomplete="new-password" required />
+        </div>
+
+        <div class="field">
+          <label for="cadastro-password-confirm">Confirmar senha <span class="required">*</span></label>
+          <input id="cadastro-password-confirm" type="password" placeholder="Repita a senha" autocomplete="new-password" required />
+        </div>
+
+        <button type="submit" class="btn btn-primary">Criar conta</button>
+      </form>
+
+      <p class="auth-card__footer">
+        Já tem uma conta? <a href="login.html">Entrar</a>
+      </p>
+    </div>
+  </div>
+
+  <script src="js/authService.js"></script>
+  <script src="js/adminMockProfiles.js"></script>
+  <script src="js/dataService.js"></script>
+  <script>
+    if (AuthService.getCurrentUser()) {
+      window.location.href = "index.html";
+    }
+
+    const form = document.getElementById("cadastro-form");
+    const errorEl = document.getElementById("cadastro-error");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      errorEl.hidden = true;
+
+      const result = await AuthService.register({
+        matricula: document.getElementById("cadastro-matricula").value,
+        email: document.getElementById("cadastro-email").value,
+        password: document.getElementById("cadastro-password").value,
+        confirmPassword: document.getElementById("cadastro-password-confirm").value,
+      });
+
+      if (!result.ok) {
+        errorEl.textContent = result.error;
+        errorEl.hidden = false;
+        return;
+      }
+
+      window.location.href = "index.html";
+    });
+  </script>
+</body>
+</html>

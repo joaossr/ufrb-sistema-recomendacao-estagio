@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meu Perfil · UFRB Estágio</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* Rede de segurança: se css/style.css não carregar por algum motivo,
+       evita que os ícones SVG virem blocos pretos enormes (o padrão do
+       SVG é fill preto e, sem largura/altura definidas, 300x150px). */
+    svg { fill: none; stroke: currentColor; }
+    svg:not([width]) { width: 20px; height: 20px; }
+  </style>
+  <script src="js/authService.js"></script>
+  <script>
+    /* Guarda de acesso: sem sessão ativa, volta para o login antes de
+       o restante da página ser exibido. O administrador não tem perfil
+       de estudante, então é redirecionado direto para a área dele. */
+    (function () {
+      const user = AuthService.getCurrentUser();
+      if (!user) {
+        window.location.href = "login.html";
+      } else if (user.role === "admin") {
+        window.location.href = "admin.html";
+      }
+    })();
+  </script>
+</head>
+<body>
+  <div class="app-shell">
+    <!-- ===================== HEADER ===================== -->
+    <header class="app-header">
+      <button id="menu-toggle" class="menu-toggle" aria-label="Abrir menu">
+        <svg class="icon" viewBox="0 0 24 24" width="22" height="22"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+
+      <div class="brand">
+        <img src="assets/logo-ufrb.png" alt="Logotipo da UFRB" class="brand__logo" />
+        <div class="brand__text">
+          <span class="brand__title">Universidade Federal do Recôncavo da Bahia</span>
+          <span class="brand__subtitle">Centro de Ciências Exatas e Tecnológicas</span>
+        </div>
+      </div>
+
+    </header>
+
+    <div class="app-body">
+      <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
+
+      <!-- ===================== SIDEBAR ===================== -->
+      <aside id="sidebar" class="sidebar">
+        <ul class="sidebar__nav">
+          <li><a href="index.html" class="sidebar__link is-active">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Cadastro
+          </a></li>
+          <li><a href="#" class="sidebar__link">
+            <svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 15 9 22 9.3 16.5 14 18.5 21 12 17 5.5 21 7.5 14 2 9.3 9 9"/></svg>
+            Recomendações
+          </a></li>
+          <li><a href="oportunidades.html" class="sidebar__link">
+            <svg class="icon" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+            Oportunidades
+          </a></li>
+          <li class="sidebar__separator"></li>
+          <li><button id="btn-logout" type="button" class="sidebar__link">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Sair
+          </button></li>
+        </ul>
+      </aside>
+
+      <!-- ===================== MAIN CONTENT ===================== -->
+      <main class="main-content">
+        <div class="page-header">
+          <div class="breadcrumb"><span class="is-current">Cadastro do estudante</span></div>
+          <h1>Meu Perfil</h1>
+          <p>Preencha suas informações acadêmicas e profissionais para melhorar a identificação de oportunidades de estágio compatíveis com seu perfil.</p>
+
+          <div class="progress-card">
+            <span class="progress-card__label">Perfil preenchido</span>
+            <div class="progress-bar">
+              <div id="progress-fill" class="progress-bar__fill"></div>
+            </div>
+            <span id="progress-value" class="progress-card__value">0%</span>
+          </div>
+        </div>
+
+        <!-- ============ IMPORTAR CURRÍCULO LATTES ============ -->
+        <section class="card card--muted lattes-card">
+          <div class="lattes-grid">
+            <div class="lattes-icon">
+              <img src="assets/logo-lattes.png" alt="Currículo Lattes" />
+            </div>
+            <div class="lattes-main">
+              <h3>Importar currículo Lattes</h3>
+              <p>Já possui informações no Currículo Lattes? Futuramente você poderá utilizá-las para preencher seu perfil automaticamente.</p>
+              <button id="btn-import-lattes" type="button" class="btn btn-primary">
+                <svg class="icon" viewBox="0 0 24 24" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Importar currículo
+              </button>
+              <div class="lattes-divider">ou</div>
+              <button type="button" class="lattes-manual" id="btn-fill-manually">preencha seu perfil manualmente</button>
+            </div>
+            <div class="lattes-howto">
+              <div class="lattes-howto__title">
+                <svg class="icon" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                Como funciona?
+              </div>
+              <ol>
+                <li>Exporte seu currículo no site do Lattes (arquivo XML).</li>
+                <li>Envie o arquivo aqui.</li>
+                <li>Seus dados serão extraídos automaticamente.</li>
+              </ol>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ CARD 1: CURSO ============ -->
+        <section class="card card--priority">
+          <div class="card__header">
+            <div class="card__heading">
+              <span class="card__step">1</span>
+              <h2 class="card__title">Curso</h2>
+            </div>
+            <span class="badge-required">
+              <svg class="icon" viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              Informação essencial para as recomendações
+            </span>
+          </div>
+          <p class="card__subtitle">Informe seu curso e sua situação acadêmica.</p>
+
+          <div class="field-grid">
+            <div class="field">
+              <label for="course-input">Curso <span class="required">*</span></label>
+              <div class="input-icon-wrap">
+                <svg class="icon input-icon" viewBox="0 0 24 24" width="16" height="16"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input id="course-input" type="text" placeholder="Pesquisar curso..." required />
+              </div>
+            </div>
+            <div class="field">
+              <label for="semester-select">Semestre atual <span class="required">*</span></label>
+              <select id="semester-select" required></select>
+            </div>
+            <div class="field">
+              <label for="graduation-select">Previsão de conclusão <span class="required">*</span></label>
+              <select id="graduation-select" required></select>
+            </div>
+          </div>
+
+          <div class="field-grid" style="margin-top: 18px;">
+            <div class="field">
+              <label for="registration-input">Matrícula</label>
+              <input id="registration-input" type="text" readonly />
+              <p class="field-hint">Vinculada à sua conta — não pode ser alterada aqui.</p>
+            </div>
+            <div class="field">
+              <label for="linkedin-input">LinkedIn</label>
+              <input id="linkedin-input" type="url" placeholder="https://www.linkedin.com/in/seu-usuario" />
+              <p id="linkedin-error" class="field-error" hidden>Informe uma URL válida do LinkedIn (ex.: https://www.linkedin.com/in/usuario).</p>
+            </div>
+          </div>
+
+          <div id="lattes-identity-block" class="lattes-identity-block" hidden>
+            <img src="assets/logo-lattes.png" alt="" class="lattes-identity-block__logo" />
+            <div>
+              <strong id="lattes-identity-name"></strong>
+              <span id="lattes-identity-meta"></span>
+            </div>
+          </div>
+
+          <!-- ============ TCC ============ -->
+          <div class="tcc-block">
+            <p class="tcc-block__title">Trabalho de Conclusão de Curso (TCC)</p>
+            <div class="field">
+              <label for="tcc-status-select">Situação do TCC</label>
+              <select id="tcc-status-select"></select>
+            </div>
+
+            <div id="tcc-details" hidden style="margin-top: 16px;">
+              <div class="field">
+                <label for="tcc-title-input">Título do TCC</label>
+                <input id="tcc-title-input" type="text" placeholder="Título do trabalho" />
+              </div>
+              <div class="field" style="margin-top: 14px;">
+                <label for="tcc-summary-input">Resumo</label>
+                <textarea id="tcc-summary-input" placeholder="Resumo do trabalho"></textarea>
+              </div>
+              <div class="field" style="margin-top: 14px;">
+                <label for="tcc-keywords-input">Palavras-chave</label>
+                <input id="tcc-keywords-input" type="text" placeholder="Digite uma palavra-chave e pressione Enter" />
+                <div id="tcc-keywords-tags" class="chip-list-preview" style="margin-top: 10px;"></div>
+              </div>
+              <div class="field" style="margin-top: 14px;">
+                <label for="tcc-advisor-input">Orientador</label>
+                <input id="tcc-advisor-input" type="text" placeholder="Digite o nome do orientador" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ CARD 2: TECNOLOGIAS ============ -->
+        <section class="card card--priority">
+          <div class="card__header">
+            <div class="card__heading">
+              <span class="card__step">2</span>
+              <h2 class="card__title">Tecnologias e conhecimentos</h2>
+            </div>
+          </div>
+          <p class="card__subtitle">Adicione tecnologias, ferramentas ou conhecimentos técnicos que você possui.</p>
+
+          <div class="tech-input-row">
+            <input id="tech-input" type="text" placeholder="Digite uma tecnologia ou conhecimento (ex.: Python, AutoCAD, LabVIEW...)" />
+            <select id="tech-level-select"></select>
+            <button id="btn-add-tech" type="button" class="btn btn-primary">
+              <svg class="icon" viewBox="0 0 24 24" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Adicionar
+            </button>
+          </div>
+
+          <div id="tech-chip-list" class="chip-list"></div>
+          <p class="field-hint" style="margin-top: 14px;">Você pode adicionar qualquer tecnologia ou ferramenta — não é preciso se limitar à programação.</p>
+        </section>
+
+        <!-- ============ CARD 3: PROJETOS ============ -->
+        <section class="card card--priority">
+          <div class="card__header">
+            <div class="card__heading">
+              <span class="card__step">3</span>
+              <h2 class="card__title">Projetos desenvolvidos</h2>
+            </div>
+            <button id="btn-add-project" type="button" class="btn btn-primary">
+              <svg class="icon" viewBox="0 0 24 24" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Adicionar projeto
+            </button>
+          </div>
+          <p class="card__subtitle">Conte quais projetos você já desenvolveu durante sua formação ou por iniciativa própria.</p>
+
+          <div id="projects-empty" class="empty-state">
+            <svg viewBox="0 0 24 24"><path d="M3 7v13h18V7"/><path d="M3 7l3-4h12l3 4"/><path d="M3 7h18"/></svg>
+            <p>Você ainda não adicionou nenhum projeto.</p>
+          </div>
+          <div id="projects-grid" class="project-grid" hidden></div>
+        </section>
+
+        <!-- ============ EXPERIÊNCIA PROFISSIONAL (secundário) ============ -->
+        <section class="card card--secondary">
+          <h2 class="card__title">Experiência Profissional</h2>
+          <p class="card__subtitle">Você possui experiência profissional?</p>
+
+          <div class="btn-ghost-toggle">
+            <button id="exp-toggle-yes" type="button" class="toggle-btn">Sim</button>
+            <button id="exp-toggle-no" type="button" class="toggle-btn is-selected">Não</button>
+          </div>
+
+          <div id="experience-form" hidden style="margin-top: 20px;">
+            <div class="field-grid">
+              <div class="field">
+                <label for="exp-company">Empresa</label>
+                <input id="exp-company" type="text" placeholder="Nome da empresa" />
+              </div>
+              <div class="field">
+                <label for="exp-role">Cargo/Função</label>
+                <input id="exp-role" type="text" placeholder="Ex.: Estagiário, Assistente..." />
+              </div>
+              <div class="field">
+                <label for="exp-work-area">Área de atuação</label>
+                <select id="exp-work-area"></select>
+              </div>
+            </div>
+            <div class="field-grid" style="grid-template-columns: 1fr 1fr; margin-top: 14px;">
+              <div class="field">
+                <label for="exp-start-date">Data de início</label>
+                <input id="exp-start-date" type="month" />
+              </div>
+              <div class="field">
+                <label for="exp-end-date">Data de término</label>
+                <input id="exp-end-date" type="month" />
+              </div>
+            </div>
+            <label class="checkbox-inline" style="margin-top: 14px;">
+              <input id="exp-current-checkbox" type="checkbox" />
+              <span>Experiência atual</span>
+            </label>
+            <div class="field" style="margin-top: 14px;">
+              <label for="exp-description">Descrição das atividades</label>
+              <textarea id="exp-description" placeholder="Descreva brevemente suas atividades"></textarea>
+            </div>
+            <div class="field" style="margin-top: 14px;">
+              <label for="exp-tech-input">Tecnologias utilizadas</label>
+              <div class="tech-input-row">
+                <input id="exp-tech-input" type="text" placeholder="Digite e pressione Enter para adicionar" />
+              </div>
+              <div id="exp-tech-tags" class="chip-list" style="margin-top: 10px;"></div>
+            </div>
+            <button id="btn-add-experience" type="button" class="btn btn-secondary" style="margin-top: 16px;">
+              <svg class="icon" viewBox="0 0 24 24" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Adicionar experiência
+            </button>
+          </div>
+
+          <div id="experience-list"></div>
+        </section>
+
+        <!-- ============ ÁREAS DE INTERESSE (secundário) ============ -->
+        <section class="card card--secondary">
+          <h2 class="card__title">Áreas de interesse</h2>
+          <p class="card__subtitle">Em quais áreas você gostaria de realizar estágio?</p>
+          <div class="field combobox" style="margin-top: 12px;">
+            <div class="input-icon-wrap">
+              <svg class="icon input-icon" viewBox="0 0 24 24" width="16" height="16"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input id="interest-input" type="text" placeholder="Digite para pesquisar uma área..." autocomplete="off" />
+            </div>
+            <ul id="interest-suggestions" class="combobox__list" hidden></ul>
+          </div>
+          <div id="interest-tags" class="chip-list-preview" style="margin-top: 12px;"></div>
+        </section>
+
+        <div class="form-footer-wrap">
+          <p id="save-hint" class="form-footer-hint"></p>
+          <div class="form-footer">
+            <button id="btn-cancel" type="button" class="btn btn-outline">Cancelar</button>
+            <button id="btn-save-profile" type="button" class="btn btn-primary" disabled>
+              <svg class="icon" viewBox="0 0 24 24" width="16" height="16"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Salvar perfil
+            </button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ===================== MODAL: PROJETO ===================== -->
+  <div id="project-modal" class="modal-overlay" hidden>
+    <div class="modal">
+      <div class="modal__header">
+        <h2 id="project-modal-title">Adicionar projeto</h2>
+        <button id="project-modal-close" class="modal__close" aria-label="Fechar">
+          <svg class="icon" viewBox="0 0 24 24" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal__body">
+        <div class="field">
+          <label for="project-name">Nome do projeto <span class="required">*</span></label>
+          <input id="project-name" type="text" placeholder="Ex.: Sistema de Gestão Financeira" />
+        </div>
+        <div class="field">
+          <label for="project-description">Descrição <span class="required">*</span></label>
+          <textarea id="project-description" placeholder="Conte brevemente sobre o projeto"></textarea>
+        </div>
+        <div class="field-grid" style="grid-template-columns: 1fr 1fr;">
+          <div class="field">
+            <label for="project-center">Centro Acadêmico</label>
+            <select id="project-center"></select>
+          </div>
+          <div class="field">
+            <label for="project-course-input">Curso</label>
+            <input id="project-course-input" type="text" placeholder="Selecione o Centro Acadêmico primeiro" disabled />
+          </div>
+        </div>
+        <div class="field-grid" style="grid-template-columns: 1fr 1fr;">
+          <div class="field">
+            <label for="project-area-input">Área do Projeto</label>
+            <input id="project-area-input" type="text" placeholder="Buscar área..." />
+          </div>
+          <div class="field">
+            <label for="project-type-input">Tipo de Projeto</label>
+            <input id="project-type-input" type="text" placeholder="Buscar tipo..." />
+          </div>
+        </div>
+        <div class="field">
+          <label for="project-tech-input">Tecnologias utilizadas</label>
+          <input id="project-tech-input" type="text" placeholder="Digite e pressione Enter para adicionar" />
+          <div id="project-tech-tags" class="chip-list"></div>
+        </div>
+        <div class="field">
+          <label for="project-link">Link do projeto</label>
+          <input id="project-link" type="url" placeholder="https://... (opcional)" />
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button id="project-cancel-btn" type="button" class="btn btn-outline">Cancelar</button>
+        <button id="project-save-btn" type="button" class="btn btn-primary">Salvar projeto</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== MODAL: IMPORTAR LATTES ===================== -->
+  <div id="lattes-modal" class="modal-overlay" hidden>
+    <div class="modal modal--sm">
+      <div class="modal__header">
+        <div class="modal__header-brand">
+          <img src="assets/logo-lattes.png" alt="" class="modal__header-logo" />
+          <h2>Importar currículo</h2>
+        </div>
+        <button id="lattes-modal-close" class="modal__close" aria-label="Fechar">
+          <svg class="icon" viewBox="0 0 24 24" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal__body">
+        <!-- Estado 1: upload -->
+        <div id="lattes-upload-state">
+          <div id="lattes-dropzone" class="dropzone">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <div><strong>Arraste seu arquivo aqui</strong></div>
+            <div class="dropzone-or">ou</div>
+            <button id="btn-select-lattes-file" type="button" class="btn btn-secondary btn-sm">Selecionar arquivo</button>
+            <input id="lattes-file-input" type="file" accept=".xml" hidden />
+          </div>
+          <div class="notice-box">O arquivo é lido inteiramente no seu navegador: nada é enviado a servidores do Lattes/CNPq. Serão extraídos apenas nome completo, ID Lattes, formação acadêmica e idiomas.</div>
+        </div>
+
+        <!-- Estado 2: extraindo -->
+        <div id="lattes-loading-state" class="lattes-loading" hidden>
+          <div class="spinner"></div>
+          <p>Lendo o arquivo XML...</p>
+        </div>
+
+        <!-- Estado 3: dados extraídos (preview) -->
+        <div id="lattes-preview-state" hidden>
+          <p class="field-hint">Arquivo: <strong id="lattes-preview-filename"></strong></p>
+
+          <p class="lattes-section-title">Dados identificados no Lattes</p>
+
+          <div class="lattes-preview-block">
+            <span class="lattes-preview-label">Nome completo</span>
+            <p id="lattes-preview-name" class="lattes-preview-value"></p>
+          </div>
+
+          <div class="lattes-preview-block">
+            <span class="lattes-preview-label">ID Lattes</span>
+            <p id="lattes-preview-id" class="lattes-preview-value"></p>
+          </div>
+
+          <div class="lattes-preview-block">
+            <span class="lattes-preview-label">Formação</span>
+            <p class="field-hint" style="margin: 0 0 10px;">Selecione qual vínculo representa seu curso atual.</p>
+            <div id="lattes-preview-formations"></div>
+          </div>
+
+          <div id="lattes-preview-languages-block" class="lattes-preview-block" hidden>
+            <span class="lattes-preview-label">Idiomas</span>
+            <div id="lattes-preview-languages"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button id="lattes-cancel-btn" type="button" class="btn btn-outline">Fechar</button>
+        <button id="lattes-apply-btn" type="button" class="btn btn-primary" hidden>Aplicar dados ao perfil</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/layout.js"></script>
+  <script src="js/adminMockProfiles.js"></script>
+  <script src="js/dataService.js"></script>
+  <script src="js/lattesParser.js"></script>
+  <script src="js/combobox.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/perfil.js"></script>
+</body>
+</html>

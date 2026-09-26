@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recuperar senha · Sistema de Recomendação de Estágio · UFRB</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    svg { fill: none; stroke: currentColor; }
+    svg:not([width]) { width: 20px; height: 20px; }
+  </style>
+</head>
+<body>
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-card__brand">
+        <img src="assets/logo-ufrb.png" alt="Logotipo da UFRB" />
+        <span>Universidade Federal do Recôncavo da Bahia<br />Sistema de Recomendação de Estágio</span>
+      </div>
+
+      <h1 class="auth-card__title">Recuperar senha</h1>
+      <p class="auth-card__subtitle">Confirme sua matrícula e e-mail institucional e defina uma nova senha.</p>
+
+      <form id="reset-form" class="auth-form" novalidate>
+        <p id="reset-error" class="auth-form__error" hidden></p>
+        <p id="reset-success" class="auth-form__success" hidden>Senha alterada com sucesso. Você já pode entrar com a nova senha.</p>
+
+        <div class="field">
+          <label for="reset-matricula">Matrícula <span class="required">*</span></label>
+          <input id="reset-matricula" type="text" placeholder="Número de matrícula na UFRB" autocomplete="username" required />
+        </div>
+
+        <div class="field">
+          <label for="reset-email">E-mail institucional <span class="required">*</span></label>
+          <input id="reset-email" type="email" placeholder="nome@ufrb.edu.br" autocomplete="email" required />
+        </div>
+
+        <div class="field">
+          <label for="reset-password">Nova senha <span class="required">*</span></label>
+          <input id="reset-password" type="password" placeholder="Mínimo de 6 caracteres" autocomplete="new-password" required />
+        </div>
+
+        <div class="field">
+          <label for="reset-password-confirm">Confirmar nova senha <span class="required">*</span></label>
+          <input id="reset-password-confirm" type="password" placeholder="Repita a nova senha" autocomplete="new-password" required />
+        </div>
+
+        <button type="submit" class="btn btn-primary">Salvar nova senha</button>
+      </form>
+
+      <p class="auth-card__footer">
+        Lembrou sua senha? <a href="login.html">Voltar para o login</a>
+      </p>
+    </div>
+  </div>
+
+  <script src="js/authService.js"></script>
+  <script src="js/adminMockProfiles.js"></script>
+  <script src="js/dataService.js"></script>
+  <script>
+    const form = document.getElementById("reset-form");
+    const errorEl = document.getElementById("reset-error");
+    const successEl = document.getElementById("reset-success");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      errorEl.hidden = true;
+      successEl.hidden = true;
+
+      const result = await AuthService.resetPassword({
+        matricula: document.getElementById("reset-matricula").value,
+        email: document.getElementById("reset-email").value,
+        newPassword: document.getElementById("reset-password").value,
+        confirmNewPassword: document.getElementById("reset-password-confirm").value,
+      });
+
+      if (!result.ok) {
+        errorEl.textContent = result.error;
+        errorEl.hidden = false;
+        return;
+      }
+
+      form.reset();
+      successEl.hidden = false;
+    });
+  </script>
+</body>
+</html>

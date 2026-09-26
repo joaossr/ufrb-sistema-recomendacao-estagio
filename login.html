@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Entrar · Sistema de Recomendação de Estágio · UFRB</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    svg { fill: none; stroke: currentColor; }
+    svg:not([width]) { width: 20px; height: 20px; }
+  </style>
+</head>
+<body>
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-card__brand">
+        <img src="assets/logo-ufrb.png" alt="Logotipo da UFRB" />
+        <span>Universidade Federal do Recôncavo da Bahia<br />Sistema de Recomendação de Estágio</span>
+      </div>
+
+      <h1 class="auth-card__title">Entrar</h1>
+      <p class="auth-card__subtitle">Acesse com sua matrícula e senha.</p>
+
+      <form id="login-form" class="auth-form" novalidate>
+        <p id="login-error" class="auth-form__error" hidden></p>
+
+        <div class="field">
+          <label for="login-matricula">Matrícula <span class="required">*</span></label>
+          <input id="login-matricula" type="text" placeholder="Número de matrícula na UFRB" autocomplete="username" required />
+        </div>
+
+        <div class="field">
+          <label for="login-password">Senha <span class="required">*</span></label>
+          <input id="login-password" type="password" placeholder="Sua senha" autocomplete="current-password" required />
+        </div>
+
+        <div class="auth-card__links">
+          <a href="recuperar-senha.html">Esqueci minha senha</a>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Entrar</button>
+      </form>
+
+      <p class="auth-card__footer">
+        Ainda não tem uma conta? <a href="cadastro.html">Criar conta</a>
+      </p>
+    </div>
+  </div>
+
+  <script src="js/authService.js"></script>
+  <script src="js/adminMockProfiles.js"></script>
+  <script src="js/dataService.js"></script>
+  <script>
+    if (AuthService.getCurrentUser()) {
+      window.location.href = "index.html";
+    }
+
+    const form = document.getElementById("login-form");
+    const errorEl = document.getElementById("login-error");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      errorEl.hidden = true;
+
+      const result = await AuthService.login({
+        matricula: document.getElementById("login-matricula").value,
+        password: document.getElementById("login-password").value,
+      });
+
+      if (!result.ok) {
+        errorEl.textContent = result.error;
+        errorEl.hidden = false;
+        return;
+      }
+
+      window.location.href = "index.html";
+    });
+  </script>
+</body>
+</html>
