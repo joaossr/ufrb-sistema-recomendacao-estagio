@@ -78,10 +78,18 @@
         <div class="page-header">
           <div class="breadcrumb"><span class="is-current">Administração</span></div>
           <h1>Painel Administrativo</h1>
-          <p>Área restrita: visualize todos os perfis de estudantes cadastrados no sistema.</p>
+          <p>Estudantes, empresas, convênios, vagas e importações cadastrados no sistema.</p>
         </div>
 
-        <div id="admin-dashboard">
+        <div class="admin-tabs" role="tablist">
+          <button type="button" class="admin-tab is-active" data-tab="estudantes" role="tab">Estudantes</button>
+          <button type="button" class="admin-tab" data-tab="empresas" role="tab">Empresas &amp; Convênios</button>
+          <button type="button" class="admin-tab" data-tab="vagas" role="tab">Vagas</button>
+          <button type="button" class="admin-tab" data-tab="importacoes" role="tab">Importações</button>
+        </div>
+
+        <!-- =============== ABA: ESTUDANTES =============== -->
+        <div id="tab-estudantes" class="admin-tab-panel">
           <div class="admin-toolbar">
             <p id="admin-summary" class="admin-toolbar__summary"></p>
           </div>
@@ -90,7 +98,7 @@
 
           <section class="card">
             <div class="card__header">
-              <h2 class="card__title">Perfis cadastrados</h2>
+              <h2 class="card__title">Estudantes cadastrados</h2>
             </div>
             <input id="admin-search" type="text" class="admin-search" placeholder="Buscar por nome, curso ou matrícula..." />
 
@@ -103,21 +111,185 @@
                     <th>Matrícula</th>
                     <th>E-mail</th>
                     <th>Perfil</th>
-                    <th>Origem</th>
+                    <th>Embedding</th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody id="admin-table-body"></tbody>
               </table>
             </div>
-            <p id="admin-empty" class="field-hint" hidden>Nenhum perfil encontrado.</p>
+            <p id="admin-empty" class="field-hint" hidden>Nenhum estudante cadastrado ainda.</p>
+          </section>
+        </div>
+
+        <!-- =============== ABA: EMPRESAS & CONVÊNIOS =============== -->
+        <div id="tab-empresas" class="admin-tab-panel" hidden>
+          <section class="card">
+            <div class="card__header">
+              <h2 class="card__title">Nova empresa</h2>
+            </div>
+            <div class="field-grid">
+              <div class="field">
+                <label for="empresa-nome-input">Nome <span class="required">*</span></label>
+                <input id="empresa-nome-input" type="text" placeholder="Ex.: DevSoft Tecnologia Ltda" />
+              </div>
+              <div class="field">
+                <label for="empresa-cnpj-input">CNPJ</label>
+                <input id="empresa-cnpj-input" type="text" placeholder="Opcional" />
+              </div>
+            </div>
+            <button id="btn-criar-empresa" type="button" class="btn btn-primary btn-sm" style="margin-top: 12px;">Cadastrar empresa</button>
+          </section>
+
+          <section class="card">
+            <div class="card__header">
+              <h2 class="card__title">Empresas cadastradas</h2>
+            </div>
+            <div class="admin-table-wrap">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Empresa</th>
+                    <th>CNPJ</th>
+                    <th>Cadastrada em</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="empresas-table-body"></tbody>
+              </table>
+            </div>
+            <p id="empresas-empty" class="field-hint" hidden>Nenhuma empresa cadastrada ainda.</p>
+          </section>
+        </div>
+
+        <!-- =============== ABA: VAGAS =============== -->
+        <div id="tab-vagas" class="admin-tab-panel" hidden>
+          <section class="card">
+            <div class="card__header">
+              <h2 class="card__title">Nova vaga</h2>
+            </div>
+            <div class="field-grid">
+              <div class="field">
+                <label for="vaga-empresa-select">Empresa <span class="required">*</span></label>
+                <select id="vaga-empresa-select"></select>
+              </div>
+              <div class="field">
+                <label for="vaga-titulo-input">Título <span class="required">*</span></label>
+                <input id="vaga-titulo-input" type="text" placeholder="Ex.: Estágio em Desenvolvimento Backend" />
+              </div>
+            </div>
+            <div class="field-grid" style="margin-top: 14px;">
+              <div class="field">
+                <label for="vaga-cursos-input">Cursos compatíveis (separados por vírgula)</label>
+                <input id="vaga-cursos-input" type="text" placeholder="Ex.: Engenharia de Computação, Sistemas de Informação" />
+              </div>
+              <div class="field">
+                <label for="vaga-tecnologias-input">Tecnologias (separadas por vírgula)</label>
+                <input id="vaga-tecnologias-input" type="text" placeholder="Ex.: Python, SQL" />
+              </div>
+            </div>
+            <div class="field-grid" style="margin-top: 14px;">
+              <div class="field">
+                <label for="vaga-modalidade-select">Modalidade</label>
+                <select id="vaga-modalidade-select">
+                  <option value="">—</option>
+                  <option value="presencial">Presencial</option>
+                  <option value="remoto">Remoto</option>
+                  <option value="hibrido">Híbrido</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="vaga-bolsa-input">Bolsa</label>
+                <input id="vaga-bolsa-input" type="text" placeholder="Ex.: R$ 800,00" />
+              </div>
+            </div>
+            <div class="field" style="margin-top: 14px;">
+              <label for="vaga-descricao-input">Descrição</label>
+              <textarea id="vaga-descricao-input" rows="3" placeholder="Atividades, requisitos, benefícios..."></textarea>
+            </div>
+            <button id="btn-criar-vaga" type="button" class="btn btn-primary btn-sm" style="margin-top: 12px;">Cadastrar vaga</button>
+          </section>
+
+          <section class="card">
+            <div class="card__header">
+              <h2 class="card__title">Vagas cadastradas</h2>
+            </div>
+            <div class="rec-filters" id="vagas-filtros">
+              <button type="button" class="rec-filter is-active" data-status="">Todas</button>
+              <button type="button" class="rec-filter" data-status="ativa">Ativas</button>
+              <button type="button" class="rec-filter" data-status="encerrada">Encerradas</button>
+            </div>
+            <div class="admin-table-wrap">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Vaga</th>
+                    <th>Empresa</th>
+                    <th>Modalidade</th>
+                    <th>Status</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="vagas-table-body"></tbody>
+              </table>
+            </div>
+            <p id="vagas-empty" class="field-hint" hidden>Nenhuma vaga cadastrada ainda.</p>
+          </section>
+        </div>
+
+        <!-- =============== ABA: IMPORTAÇÕES =============== -->
+        <div id="tab-importacoes" class="admin-tab-panel" hidden>
+          <section class="card">
+            <div class="card__header">
+              <h2 class="card__title">Importar convênios (PDF)</h2>
+            </div>
+            <div id="importacao-upload-state">
+              <div id="importacao-dropzone" class="dropzone">
+                <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <div><strong>Arraste o PDF de convênios aqui</strong></div>
+                <div class="dropzone-or">ou</div>
+                <button id="btn-select-importacao-file" type="button" class="btn btn-secondary btn-sm">Selecionar arquivo</button>
+                <input id="importacao-file-input" type="file" accept=".pdf" hidden />
+              </div>
+              <div class="notice-box">O PDF é lido pelo próprio backend (PyMuPDF) para extrair processo, empresa e datas de vigência de cada convênio. Linhas malformadas (data ilegível, CNPJ ausente) são marcadas como erro por linha e não interrompem a importação das demais.</div>
+            </div>
+            <div id="importacao-loading-state" class="lattes-loading" hidden>
+              <div class="spinner"></div>
+              <p>Processando o arquivo...</p>
+            </div>
+            <div id="importacao-resultado" hidden>
+              <h3 class="admin-detail-section__title" style="margin-top:16px;">Resultado da última importação</h3>
+              <div id="importacao-resultado-body"></div>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="card__header">
+              <h2 class="card__title">Histórico de importações</h2>
+            </div>
+            <div class="admin-table-wrap">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Fonte</th>
+                    <th>Tipo</th>
+                    <th>Iniciada em</th>
+                    <th>Linhas</th>
+                    <th>Sucesso</th>
+                    <th>Erros</th>
+                  </tr>
+                </thead>
+                <tbody id="importacoes-table-body"></tbody>
+              </table>
+            </div>
+            <p id="importacoes-empty" class="field-hint" hidden>Nenhuma importação realizada ainda.</p>
           </section>
         </div>
       </main>
     </div>
   </div>
 
-  <!-- ===================== MODAL: DETALHES DO PERFIL ===================== -->
+  <!-- ===================== MODAL: DETALHES DO ESTUDANTE ===================== -->
   <div id="admin-detail-modal" class="modal-overlay" hidden>
     <div class="modal">
       <div class="modal__header">
@@ -133,10 +305,62 @@
     </div>
   </div>
 
+  <!-- ===================== MODAL: CONVÊNIOS DE UMA EMPRESA ===================== -->
+  <div id="convenios-modal" class="modal-overlay" hidden>
+    <div class="modal">
+      <div class="modal__header">
+        <h2 id="convenios-modal-title">Convênios</h2>
+        <button id="convenios-modal-close" class="modal__close" aria-label="Fechar">
+          <svg class="icon" viewBox="0 0 24 24" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal__body">
+        <section style="margin-bottom: 20px;">
+          <h3 class="admin-detail-section__title">Novo convênio</h3>
+          <div class="field-grid">
+            <div class="field">
+              <label for="convenio-processo-input">Nº do processo</label>
+              <input id="convenio-processo-input" type="text" />
+            </div>
+            <div class="field">
+              <label for="convenio-data-inicio-input">Data de início</label>
+              <input id="convenio-data-inicio-input" type="date" />
+            </div>
+          </div>
+          <div class="field" style="margin-top: 14px;">
+            <label for="convenio-data-fim-input">Data de fim (texto original do documento)</label>
+            <input id="convenio-data-fim-input" type="text" placeholder="Ex.: 15/03/2027" />
+          </div>
+          <button id="btn-criar-convenio" type="button" class="btn btn-primary btn-sm" style="margin-top: 12px;">Registrar convênio</button>
+        </section>
+        <h3 class="admin-detail-section__title">Convênios registrados</h3>
+        <div id="convenios-lista"></div>
+      </div>
+      <div class="modal__footer">
+        <button id="convenios-modal-close-btn" type="button" class="btn btn-outline">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== MODAL: RESULTADO DO CAMINHO INVERSO ===================== -->
+  <div id="caminho-inverso-modal" class="modal-overlay" hidden>
+    <div class="modal">
+      <div class="modal__header">
+        <h2 id="caminho-inverso-title">Estudantes compatíveis</h2>
+        <button id="caminho-inverso-close" class="modal__close" aria-label="Fechar">
+          <svg class="icon" viewBox="0 0 24 24" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div id="caminho-inverso-body" class="modal__body"></div>
+      <div class="modal__footer">
+        <button id="caminho-inverso-close-btn" type="button" class="btn btn-outline">Fechar</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script src="js/layout.js"></script>
-  <script src="js/adminMockProfiles.js"></script>
   <script src="js/dataService.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/admin.js"></script>

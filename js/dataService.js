@@ -197,14 +197,95 @@ const DataService = {
     return apiGet("/perfil/recomendacoes");
   },
 
-  /**
-   * USO EXCLUSIVO DO PAINEL ADMINISTRATIVO.
-   * A Fase 3 ainda não trouxe um endpoint de "listar todos os alunos"
-   * (isso é a Fase 10 — melhoria do painel administrativo). Por ora,
-   * mostra só os perfis fictícios de demonstração, sem quebrar a tela.
-   */
-  async listAllProfilesForAdmin() {
-    const mockProfiles = typeof ADMIN_MOCK_PROFILES !== "undefined" ? ADMIN_MOCK_PROFILES : [];
-    return mockProfiles.map((entry) => ({ source: "mock", ...JSON.parse(JSON.stringify(entry)) }));
+  /* -----------------------------------------------------------------
+   * USO EXCLUSIVO DO PAINEL ADMINISTRATIVO (Fase 10, passo 27).
+   * Antes disso, esta seção mostrava só os perfis fictícios de
+   * `adminMockProfiles.js` porque não existia endpoint nenhum para
+   * listar alunos reais. Agora todo o painel fala com o backend.
+   * --------------------------------------------------------------- */
+
+  /** Lista resumida de todos os alunos cadastrados (para a tabela). */
+  listStudents() {
+    return apiGet("/admin/alunos");
+  },
+
+  /** Detalhe completo de um aluno (perfil + tecnologias + projetos +
+   * experiências + áreas de interesse) — usado no modal "Ver detalhes". */
+  getStudentDetail(alunoId) {
+    return apiGet(`/admin/alunos/${alunoId}`);
+  },
+
+  /** Lista todas as empresas cadastradas. */
+  listCompanies() {
+    return apiGet("/admin/empresas");
+  },
+
+  /** Cadastra uma nova empresa (nome obrigatório, CNPJ opcional). */
+  createCompany(payload) {
+    return apiSend("/admin/empresas", "POST", payload);
+  },
+
+  /** Lista os convênios de uma empresa. */
+  listConvenios(empresaId) {
+    return apiGet(`/admin/empresas/${empresaId}/convenios`);
+  },
+
+  /** Registra um convênio para uma empresa. */
+  createConvenio(empresaId, payload) {
+    return apiSend(`/admin/empresas/${empresaId}/convenios`, "POST", payload);
+  },
+
+  /** Lista vagas. `statusFiltro` é opcional ("ativa" | "encerrada"). */
+  listVagas(statusFiltro) {
+    const query = statusFiltro ? `?status_filtro=${encodeURIComponent(statusFiltro)}` : "";
+    return apiGet(`/admin/vagas${query}`);
+  },
+
+  /** Lista as vagas de uma empresa específica. */
+  listVagasDaEmpresa(empresaId) {
+    return apiGet(`/admin/empresas/${empresaId}/vagas`);
+  },
+
+  /** Cria uma vaga vinculada a uma empresa. */
+  createVaga(empresaId, payload) {
+    return apiSend(`/admin/empresas/${empresaId}/vagas`, "POST", payload);
+  },
+
+  /** Atualiza o status de uma vaga ("ativa" | "encerrada"). Ao encerrar,
+   * o backend também some com ela das buscas de recomendação. */
+  updateVagaStatus(vagaId, status) {
+    return apiSend(`/admin/vagas/${vagaId}/status`, "PUT", { status });
+  },
+
+  /** Exclui uma vaga. */
+  async deleteVaga(vagaId) {
+    await apiSend(`/admin/vagas/${vagaId}`, "DELETE");
+  },
+
+  /** Caminho inverso (Fase 9): dado uma vaga, gera/atualiza as
+   * recomendações de quais alunos são compatíveis com ela. */
+  gerarRecomendacoesParaVaga(vagaId) {
+    return apiSend(`/admin/vagas/${vagaId}/recomendacoes/gerar`, "POST");
+  },
+
+  /** Caminho inverso (Fase 9): dado uma empresa sem vaga ativa, gera
+   * as recomendações de prospecção (quais alunos combinam com ela). */
+  gerarRecomendacoesParaEmpresa(empresaId) {
+    return apiSend(`/admin/empresas/${empresaId}/recomendacoes/gerar`, "POST");
+  },
+
+  /** Histórico de importações (PDF de convênios, e futuramente COOPC). */
+  listImportacoes() {
+    return apiGet("/admin/importacoes");
+  },
+
+  /** Envia o PDF de convênios da UFRB para o backend processar
+   * (PyMuPDF) e gravar empresas/convênios — retorna o relatório da
+   * importação (total de linhas, sucesso, erros por linha). */
+  async importarConveniosPdf(file) {
+    const { ok, data, networkError } = await AuthService.apiUpload("/admin/importacoes/convenios-pdf", file);
+    if (networkError) throw new Error("Não foi possível conectar ao servidor. Tente novamente.");
+    if (!ok) throw new Error((data && data.detail) || "Não foi possível processar o arquivo.");
+    return data;
   },
 };
