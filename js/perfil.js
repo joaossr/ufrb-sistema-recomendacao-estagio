@@ -324,7 +324,8 @@ async function editarTecnologia(id, newLevel) {
 }
 
 async function removerTecnologia(id) {
-  if (!window.confirm("Remover esta tecnologia do seu perfil?")) return;
+  const ok = await UI.confirmAction("Remover esta tecnologia do seu perfil?", { confirmLabel: "Remover" });
+  if (!ok) return;
   await DataService.removeTechnology(id);
   await renderAll();
 }
@@ -438,7 +439,8 @@ async function adicionarProjeto() {
 }
 
 async function excluirProjeto(id) {
-  if (!window.confirm("Excluir este projeto? Esta ação não pode ser desfeita.")) return;
+  const ok = await UI.confirmAction("Excluir este projeto? Esta ação não pode ser desfeita.");
+  if (!ok) return;
   await DataService.deleteProject(id);
   await renderAll();
 }
@@ -515,7 +517,8 @@ async function adicionarExperiencia() {
 }
 
 async function excluirExperiencia(id) {
-  if (!window.confirm("Excluir esta experiência? Esta ação não pode ser desfeita.")) return;
+  const ok = await UI.confirmAction("Excluir esta experiência? Esta ação não pode ser desfeita.");
+  if (!ok) return;
   await DataService.deleteExperience(id);
   await renderAll();
 }
@@ -877,7 +880,7 @@ async function salvarPerfil() {
     expected_graduation: els["graduation-select"].value,
   });
   await atualizarProgresso();
-  UI.showToast(els["toast"], "Perfil salvo localmente para demonstração.");
+  UI.showToast(els["toast"], "Perfil salvo.");
 }
 
 /* ---------------------------------------------------------------------

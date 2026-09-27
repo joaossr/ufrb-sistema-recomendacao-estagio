@@ -608,7 +608,8 @@ async function renderVagas() {
     delBtn.className = "btn-danger-text";
     delBtn.textContent = "Excluir";
     delBtn.addEventListener("click", async () => {
-      if (!window.confirm('Excluir a vaga "' + vaga.titulo + '"? Esta ação não pode ser desfeita.')) return;
+      const ok = await UI.confirmAction('Excluir a vaga "' + vaga.titulo + '"? Esta ação não pode ser desfeita.');
+      if (!ok) return;
       try {
         await DataService.deleteVaga(vaga.id);
         showToast("Vaga excluída.");

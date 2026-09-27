@@ -647,4 +647,66 @@ const UI = {
       toastEl.classList.remove("is-visible");
     }, 3200);
   },
+
+  /**
+   * Confirmação própria da interface — nunca `window.confirm()`, que
+   * fica bloqueado/suprimido silenciosamente em vários navegadores e
+   * contextos embutidos (o `confirm()` simplesmente retorna `false`
+   * sem avisar nada, fazendo o botão de excluir "não funcionar" sem
+   * erro nenhum no console). O modal é criado uma vez e reaproveitado
+   * nas chamadas seguintes.
+   */
+  confirmAction(message, { confirmLabel = "Excluir", cancelLabel = "Cancelar", danger = true } = {}) {
+    return new Promise((resolve) => {
+      let overlay = document.getElementById("ui-confirm-modal");
+      if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.id = "ui-confirm-modal";
+        overlay.className = "modal-overlay";
+        overlay.hidden = true;
+        overlay.innerHTML =
+          '<div class="modal modal--sm">' +
+          '<div class="modal__body">' +
+          '<p id="ui-confirm-message" style="margin:0 0 20px;font-size:14.5px;line-height:1.5;"></p>' +
+          '<div style="display:flex;gap:10px;justify-content:flex-end;">' +
+          '<button type="button" id="ui-confirm-cancel" class="btn btn-outline btn-sm"></button>' +
+          '<button type="button" id="ui-confirm-ok" class="btn btn-sm"></button>' +
+          "</div></div></div>";
+        document.body.appendChild(overlay);
+      }
+
+      const messageEl = overlay.querySelector("#ui-confirm-message");
+      const cancelBtn = overlay.querySelector("#ui-confirm-cancel");
+      const okBtn = overlay.querySelector("#ui-confirm-ok");
+
+      messageEl.textContent = message;
+      cancelBtn.textContent = cancelLabel;
+      okBtn.textContent = confirmLabel;
+      okBtn.className = "btn btn-sm " + (danger ? "btn-danger-text" : "btn-primary");
+
+      const cleanup = (result) => {
+        overlay.hidden = true;
+        cancelBtn.removeEventListener("click", onCancel);
+        okBtn.removeEventListener("click", onOk);
+        overlay.removeEventListener("click", onOverlayClick);
+        document.removeEventListener("keydown", onKeydown);
+        resolve(result);
+      };
+      const onCancel = () => cleanup(false);
+      const onOk = () => cleanup(true);
+      const onOverlayClick = (e) => {
+        if (e.target === overlay) cleanup(false);
+      };
+      const onKeydown = (e) => {
+        if (e.key === "Escape") cleanup(false);
+      };
+
+      cancelBtn.addEventListener("click", onCancel);
+      okBtn.addEventListener("click", onOk);
+      overlay.addEventListener("click", onOverlayClick);
+      document.addEventListener("keydown", onKeydown);
+
+      overlay.hidden = false;
+    });
+  },
 };
