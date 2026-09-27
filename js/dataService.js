@@ -184,6 +184,19 @@ const DataService = {
     return apiSend("/perfil/lattes/confirmar", "POST", payload);
   },
 
+  /** Dispara o pipeline completo (Fase 8/9): busca vetorial -> regras
+   * objetivas -> Qwen3 -> recomendações de vaga + prospecção de
+   * empresas. Pode demorar (o Qwen3 analisa candidato por candidato)
+   * — quem chama deve mostrar um estado de carregamento. */
+  gerarRecomendacoes() {
+    return apiSend("/perfil/recomendacoes/gerar", "POST");
+  },
+
+  /** Lista as recomendações/prospecções já geradas anteriormente. */
+  listarRecomendacoes() {
+    return apiGet("/perfil/recomendacoes");
+  },
+
   /**
    * USO EXCLUSIVO DO PAINEL ADMINISTRATIVO.
    * A Fase 3 ainda não trouxe um endpoint de "listar todos os alunos"

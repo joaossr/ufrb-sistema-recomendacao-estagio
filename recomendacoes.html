@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Oportunidades · UFRB Estágio</title>
+  <title>Recomendações · UFRB Estágio</title>
   <link rel="stylesheet" href="css/style.css" />
   <style>
     svg { fill: none; stroke: currentColor; }
@@ -48,11 +48,11 @@
             <svg class="icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             Cadastro
           </a></li>
-          <li><a href="recomendacoes.html" class="sidebar__link">
+          <li><a href="recomendacoes.html" class="sidebar__link is-active">
             <svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 15 9 22 9.3 16.5 14 18.5 21 12 17 5.5 21 7.5 14 2 9.3 9 9"/></svg>
             Recomendações
           </a></li>
-          <li><a href="oportunidades.html" class="sidebar__link is-active">
+          <li><a href="oportunidades.html" class="sidebar__link">
             <svg class="icon" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
             Oportunidades
           </a></li>
@@ -67,33 +67,50 @@
       <!-- ===================== MAIN CONTENT ===================== -->
       <main class="main-content">
         <div class="page-header">
-          <div class="breadcrumb"><span class="is-current">Oportunidades</span></div>
-          <h1>Vagas de estágio recentes</h1>
-          <p>Confira algumas vagas de exemplo enquanto o motor de recomendação (baseado em LLM) ainda está em construção — futuramente esta lista será personalizada a partir do seu perfil.</p>
+          <div class="breadcrumb"><span class="is-current">Recomendações</span></div>
+          <h1>Recomendações para você</h1>
+          <p>
+            O sistema analisa a similaridade entre o seu perfil e as vagas/empresas cadastradas, e depois usa um modelo de linguagem (Qwen3) para explicar a compatibilidade.
+            <strong>Isto não é uma previsão de contratação</strong> — é uma análise de compatibilidade temática e técnica, para te ajudar a decidir onde vale a pena se candidatar ou entrar em contato.
+          </p>
+
+          <div class="rec-actions">
+            <button id="btn-gerar" type="button" class="btn btn-primary">
+              <svg class="icon" viewBox="0 0 24 24" width="16" height="16"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Gerar recomendações
+            </button>
+            <span id="rec-hint" class="field-hint">Pode levar alguns minutos — o modelo analisa cada candidato individualmente.</span>
+          </div>
         </div>
 
-        <section class="card">
-          <div class="card__header">
-            <h2 class="card__title">Recentes</h2>
-          </div>
+        <div id="rec-loading" class="rec-loading" hidden>
+          <div class="spinner"></div>
+          <span>Analisando compatibilidade com o Qwen3... isso pode levar alguns minutos.</span>
+        </div>
 
-          <div class="opportunities-carousel">
-            <button id="opp-prev" type="button" class="opportunities-nav opportunities-nav--prev" aria-label="Vagas anteriores">
-              <svg class="icon" viewBox="0 0 24 24" width="18" height="18"><polyline points="15 18 9 12 15 6"/></svg>
-            </button>
-            <div id="opp-track" class="opportunities-track"></div>
-            <button id="opp-next" type="button" class="opportunities-nav opportunities-nav--next" aria-label="Próximas vagas">
-              <svg class="icon" viewBox="0 0 24 24" width="18" height="18"><polyline points="9 18 15 12 9 6"/></svg>
-            </button>
-          </div>
+        <div id="rec-filters" class="rec-filters" hidden>
+          <button type="button" class="rec-filter is-active" data-filtro="todas">Todas</button>
+          <button type="button" class="rec-filter" data-filtro="alta">Nível alto</button>
+          <button type="button" class="rec-filter" data-filtro="media">Nível médio</button>
+          <button type="button" class="rec-filter" data-filtro="baixa">Nível baixo</button>
+          <button type="button" class="rec-filter" data-filtro="prospeccao">Só prospecção</button>
+        </div>
 
-          <p class="field-hint">Dados fictícios de demonstração — sem integração real com empresas ou convênios nesta etapa.</p>
-        </section>
+        <div id="rec-grid" class="rec-grid"></div>
+
+        <div id="rec-empty" class="rec-empty">
+          <p>Você ainda não gerou recomendações. Complete seu perfil e clique em "Gerar recomendações" para começar.</p>
+        </div>
       </main>
     </div>
   </div>
 
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
   <script src="js/layout.js"></script>
-  <script src="js/oportunidades.js"></script>
+  <script src="js/adminMockProfiles.js"></script>
+  <script src="js/dataService.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/recomendacoes.js"></script>
 </body>
 </html>
