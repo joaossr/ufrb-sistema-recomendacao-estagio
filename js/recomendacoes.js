@@ -1,12 +1,12 @@
 /**
  * recomendacoes.js
- * Controlador da página "Recomendações" (Fase 8/9): consome
- * DataService.gerarRecomendacoes()/listarRecomendacoes(), que por sua
- * vez chamam o pipeline completo no backend (busca vetorial -> regras
- * objetivas -> Qwen3 -> Recomendacao). O índice de compatibilidade
- * NUNCA é exibido como probabilidade de contratação — só como um
- * indicador interno de o quanto o perfil e a vaga/empresa têm em
- * comum, decidido pelo backend.
+ * Controlador da página "Recomendações" (Fase 8/9, ajustada na Fase
+ * 12): consome só DataService.listarRecomendacoes() — o aluno nunca
+ * dispara a geração, apenas visualiza o que o admin já gerou para
+ * todos os estudantes (ver painel administrativo). O índice de
+ * compatibilidade NUNCA é exibido como probabilidade de contratação —
+ * só como um indicador interno de o quanto o perfil e a vaga/empresa
+ * têm em comum, decidido pelo backend.
  */
 
 const els = {};
@@ -14,10 +14,7 @@ let todasRecomendacoes = [];
 let filtroAtivo = "todas";
 
 function cacheElements() {
-  [
-    "btn-gerar", "rec-hint", "rec-loading", "rec-filters", "rec-grid", "rec-empty",
-    "toast", "btn-logout",
-  ].forEach((id) => {
+  ["rec-filters", "rec-grid", "rec-empty", "toast", "btn-logout"].forEach((id) => {
     els[id] = document.getElementById(id);
   });
 }
@@ -37,28 +34,6 @@ function wireFiltros() {
       renderizarLista();
     });
   });
-}
-
-function wireGerar() {
-  els["btn-gerar"].addEventListener("click", gerar);
-}
-
-async function gerar() {
-  els["btn-gerar"].disabled = true;
-  els["rec-loading"].hidden = false;
-  els["rec-empty"].hidden = true;
-  els["rec-grid"].innerHTML = "";
-
-  try {
-    todasRecomendacoes = await DataService.gerarRecomendacoes();
-    renderizarLista();
-    UI.showToast(els["toast"], "Recomendações atualizadas.");
-  } catch (err) {
-    UI.showToast(els["toast"], err.message || "Não foi possível gerar as recomendações agora.", true);
-  } finally {
-    els["rec-loading"].hidden = true;
-    els["btn-gerar"].disabled = false;
-  }
 }
 
 async function carregarExistentes() {
@@ -86,7 +61,7 @@ function renderizarLista() {
   if (todasRecomendacoes.length === 0) {
     els["rec-empty"].hidden = false;
     els["rec-empty"].querySelector("p").textContent =
-      "Você ainda não gerou recomendações. Complete seu perfil e clique em \"Gerar recomendações\" para começar.";
+      "Ainda não há recomendações geradas para o seu perfil. Elas aparecem aqui assim que a administração processar os estudantes cadastrados.";
     return;
   }
 
@@ -226,7 +201,6 @@ async function init() {
   cacheElements();
   wireLogout();
   wireFiltros();
-  wireGerar();
   await carregarExistentes();
 }
 

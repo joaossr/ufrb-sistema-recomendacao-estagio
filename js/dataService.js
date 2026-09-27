@@ -184,15 +184,9 @@ const DataService = {
     return apiSend("/perfil/lattes/confirmar", "POST", payload);
   },
 
-  /** Dispara o pipeline completo (Fase 8/9): busca vetorial -> regras
-   * objetivas -> Qwen3 -> recomendações de vaga + prospecção de
-   * empresas. Pode demorar (o Qwen3 analisa candidato por candidato)
-   * — quem chama deve mostrar um estado de carregamento. */
-  gerarRecomendacoes() {
-    return apiSend("/perfil/recomendacoes/gerar", "POST");
-  },
-
-  /** Lista as recomendações/prospecções já geradas anteriormente. */
+  /** Lista as recomendações/prospecções já geradas anteriormente.
+   * Fase 12: o aluno NUNCA dispara a geração — só visualiza o que o
+   * admin já gerou (ver `gerarRecomendacoesParaTodos` mais abaixo). */
   listarRecomendacoes() {
     return apiGet("/perfil/recomendacoes");
   },
@@ -274,7 +268,17 @@ const DataService = {
     return apiSend(`/admin/empresas/${empresaId}/recomendacoes/gerar`, "POST");
   },
 
-  /** Histórico de importações (PDF de convênios, e futuramente COOPC). */
+  /** Fase 12: dispara o pipeline completo (busca vetorial -> regras ->
+   * Qwen3) para TODOS os alunos cadastrados de uma vez — substitui o
+   * botão que existia na área do aluno. Pode demorar bastante (um
+   * aluno de cada vez, um candidato de cada vez); quem chama deve
+   * mostrar um estado de carregamento. Retorna um resumo por aluno. */
+  gerarRecomendacoesParaTodos() {
+    return apiSend("/admin/recomendacoes/gerar", "POST");
+  },
+
+  /** Histórico de importações (PDF de convênios, planilha de
+   * empresas/vagas, e futuramente COOPC). */
   listImportacoes() {
     return apiGet("/admin/importacoes");
   },
@@ -284,6 +288,16 @@ const DataService = {
    * importação (total de linhas, sucesso, erros por linha). */
   async importarConveniosPdf(file) {
     const { ok, data, networkError } = await AuthService.apiUpload("/admin/importacoes/convenios-pdf", file);
+    if (networkError) throw new Error("Não foi possível conectar ao servidor. Tente novamente.");
+    if (!ok) throw new Error((data && data.detail) || "Não foi possível processar o arquivo.");
+    return data;
+  },
+
+  /** Fase 12: envia uma planilha (CSV ou XLSX) de empresas + convênios
+   * + vagas para o backend interpretar linha a linha e gravar cada
+   * dado no campo correto (nunca como blob de texto). */
+  async importarEmpresasVagasPlanilha(file) {
+    const { ok, data, networkError } = await AuthService.apiUpload("/admin/importacoes/empresas-vagas", file);
     if (networkError) throw new Error("Não foi possível conectar ao servidor. Tente novamente.");
     if (!ok) throw new Error((data && data.detail) || "Não foi possível processar o arquivo.");
     return data;

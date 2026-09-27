@@ -31,7 +31,12 @@ function cacheAdminElements() {
     "importacao-dropzone", "btn-select-importacao-file", "importacao-file-input",
     "importacao-upload-state", "importacao-loading-state",
     "importacao-resultado", "importacao-resultado-body",
+    "importacao-planilha-dropzone", "btn-select-importacao-planilha-file", "importacao-planilha-file-input",
+    "importacao-planilha-upload-state", "importacao-planilha-loading-state",
+    "importacao-planilha-resultado", "importacao-planilha-resultado-body",
     "importacoes-table-body", "importacoes-empty",
+    "btn-gerar-recomendacoes-todos",
+    "geracao-lote-modal", "geracao-lote-body", "geracao-lote-close", "geracao-lote-close-btn",
     "toast", "btn-logout",
   ].forEach((id) => {
     adminEls[id] = document.getElementById(id);
@@ -378,6 +383,12 @@ function renderEmpresas() {
     const cnpjCell = document.createElement("td");
     cnpjCell.textContent = empresa.cnpj || "—";
 
+    const areaCell = document.createElement("td");
+    areaCell.textContent = empresa.area || "—";
+
+    const cidadeCell = document.createElement("td");
+    cidadeCell.textContent = [empresa.cidade, empresa.uf].filter(Boolean).join(" - ") || "—";
+
     const dateCell = document.createElement("td");
     dateCell.textContent = new Date(empresa.created_at).toLocaleDateString("pt-BR");
 
@@ -398,6 +409,8 @@ function renderEmpresas() {
 
     row.appendChild(nameCell);
     row.appendChild(cnpjCell);
+    row.appendChild(areaCell);
+    row.appendChild(cidadeCell);
     row.appendChild(dateCell);
     row.appendChild(actionsCell);
     adminEls["empresas-table-body"].appendChild(row);
@@ -747,6 +760,96 @@ function renderImportacaoResultado(imp) {
   adminEls["importacao-resultado"].hidden = false;
 }
 
+async function handleImportacaoPlanilhaFile(file) {
+  if (!file) return;
+  adminEls["importacao-planilha-upload-state"].hidden = true;
+  adminEls["importacao-planilha-loading-state"].hidden = false;
+  adminEls["importacao-planilha-resultado"].hidden = true;
+
+  try {
+    const resultado = await DataService.importarEmpresasVagasPlanilha(file);
+    renderImportacaoPlanilhaResultado(resultado);
+    await renderImportacoesHistorico();
+    showToast("Importação concluída.");
+  } catch (err) {
+    showToast(err.message || "Não foi possível processar o arquivo.");
+  } finally {
+    adminEls["importacao-planilha-loading-state"].hidden = true;
+    adminEls["importacao-planilha-upload-state"].hidden = false;
+    adminEls["importacao-planilha-file-input"].value = "";
+  }
+}
+
+function renderImportacaoPlanilhaResultado(imp) {
+  let html = "";
+  html += detailRow("Arquivo", imp.fonte);
+  html += detailRow("Total de linhas", String(imp.total_linhas ?? "—"));
+  html += detailRow("Importadas com sucesso", String(imp.sucesso ?? "—"));
+  html += detailRow("Erros", String(imp.erros ? imp.erros.length : 0));
+  if (imp.relatorio) {
+    html += detailRow("Empresas criadas", String(imp.relatorio.empresas_criadas ?? 0));
+    html += detailRow("Convênios criados", String(imp.relatorio.convenios_criados ?? 0));
+    html += detailRow("Vagas criadas", String(imp.relatorio.vagas_criadas ?? 0));
+    html += detailRow("Vagas atualizadas", String(imp.relatorio.vagas_atualizadas ?? 0));
+  }
+  if (imp.erros && imp.erros.length) {
+    html += '<div class="chip-list-preview" style="margin-top:8px;">';
+    imp.erros.slice(0, 20).forEach((e) => {
+      const texto = typeof e === "string" ? e : JSON.stringify(e);
+      html += '<span class="tag-pill tag-pill--muted">' + UI.escapeHtml(texto) + "</span>";
+    });
+    html += "</div>";
+  }
+  adminEls["importacao-planilha-resultado-body"].innerHTML = html;
+  adminEls["importacao-planilha-resultado"].hidden = false;
+}
+
+/* ---------------------------------------------------------------------
+ * Recomendações — geração em lote para todos os estudantes (Fase 12)
+ * ------------------------------------------------------------------- */
+async function handleGerarRecomendacoesTodos() {
+  adminEls["btn-gerar-recomendacoes-todos"].disabled = true;
+  adminEls["geracao-lote-modal"].hidden = false;
+  adminEls["geracao-lote-body"].innerHTML =
+    '<div class="rec-loading"><div class="spinner"></div>Processando todos os estudantes cadastrados — cada um pode levar até um minuto (busca vetorial + regras + Qwen3)...</div>';
+
+  try {
+    const resumo = await DataService.gerarRecomendacoesParaTodos();
+    renderGeracaoLoteResultado(resumo);
+    showToast("Geração de recomendações concluída.");
+  } catch (err) {
+    adminEls["geracao-lote-body"].innerHTML =
+      '<p class="field-hint">' + UI.escapeHtml(err.message || "Não foi possível gerar as recomendações.") + "</p>";
+  } finally {
+    adminEls["btn-gerar-recomendacoes-todos"].disabled = false;
+  }
+}
+
+function renderGeracaoLoteResultado(resumo) {
+  let html = "";
+  html += detailRow("Estudantes processados", String(resumo.alunos_processados));
+  html += detailRow("Estudantes com erro", String(resumo.alunos_com_erro));
+  html += detailRow("Recomendações de vaga geradas", String(resumo.total_recomendacoes_geradas));
+  html += detailRow("Prospecções geradas", String(resumo.total_prospeccoes_geradas));
+
+  if (resumo.detalhes && resumo.detalhes.length) {
+    html += '<div class="admin-table-wrap" style="margin-top:16px;"><table class="admin-table"><thead><tr>';
+    html += "<th>Estudante</th><th>Recomendações</th><th>Prospecções</th><th>Erro</th></tr></thead><tbody>";
+    resumo.detalhes.forEach((d) => {
+      html += "<tr><td>" + UI.escapeHtml(d.nome_completo || d.matricula) + "</td>";
+      html += "<td>" + d.recomendacoes_geradas + "</td>";
+      html += "<td>" + d.prospeccoes_geradas + "</td>";
+      html += "<td>" + (d.erro ? UI.escapeHtml(d.erro) : "—") + "</td></tr>";
+    });
+    html += "</tbody></table></div>";
+  }
+  adminEls["geracao-lote-body"].innerHTML = html;
+}
+
+function closeGeracaoLoteModal() {
+  adminEls["geracao-lote-modal"].hidden = true;
+}
+
 /* ---------------------------------------------------------------------
  * Eventos
  * ------------------------------------------------------------------- */
@@ -793,11 +896,32 @@ function wireAdminEvents() {
     if (file) handleImportacaoFile(file);
   });
 
+  adminEls["btn-select-importacao-planilha-file"].addEventListener("click", () =>
+    adminEls["importacao-planilha-file-input"].click()
+  );
+  adminEls["importacao-planilha-file-input"].addEventListener("change", (e) =>
+    handleImportacaoPlanilhaFile(e.target.files[0])
+  );
+  adminEls["importacao-planilha-dropzone"].addEventListener("dragover", (e) => e.preventDefault());
+  adminEls["importacao-planilha-dropzone"].addEventListener("drop", (e) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (file) handleImportacaoPlanilhaFile(file);
+  });
+
+  adminEls["btn-gerar-recomendacoes-todos"].addEventListener("click", handleGerarRecomendacoesTodos);
+  adminEls["geracao-lote-close"].addEventListener("click", closeGeracaoLoteModal);
+  adminEls["geracao-lote-close-btn"].addEventListener("click", closeGeracaoLoteModal);
+  adminEls["geracao-lote-modal"].addEventListener("click", (e) => {
+    if (e.target === adminEls["geracao-lote-modal"]) closeGeracaoLoteModal();
+  });
+
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
     closeDetailModal();
     closeConveniosModal();
     closeCaminhoInversoModal();
+    closeGeracaoLoteModal();
   });
 }
 

@@ -73,19 +73,7 @@
             O sistema analisa a similaridade entre o seu perfil e as vagas/empresas cadastradas, e depois usa um modelo de linguagem (Qwen3) para explicar a compatibilidade.
             <strong>Isto não é uma previsão de contratação</strong> — é uma análise de compatibilidade temática e técnica, para te ajudar a decidir onde vale a pena se candidatar ou entrar em contato.
           </p>
-
-          <div class="rec-actions">
-            <button id="btn-gerar" type="button" class="btn btn-primary">
-              <svg class="icon" viewBox="0 0 24 24" width="16" height="16"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-              Gerar recomendações
-            </button>
-            <span id="rec-hint" class="field-hint">Pode levar alguns minutos — o modelo analisa cada candidato individualmente.</span>
-          </div>
-        </div>
-
-        <div id="rec-loading" class="rec-loading" hidden>
-          <div class="spinner"></div>
-          <span>Analisando compatibilidade com o Qwen3... isso pode levar alguns minutos.</span>
+          <p class="field-hint">As recomendações abaixo são geradas periodicamente pela administração — não é preciso fazer nada para recebê-las.</p>
         </div>
 
         <div id="rec-filters" class="rec-filters" hidden>
@@ -99,7 +87,7 @@
         <div id="rec-grid" class="rec-grid"></div>
 
         <div id="rec-empty" class="rec-empty">
-          <p>Você ainda não gerou recomendações. Complete seu perfil e clique em "Gerar recomendações" para começar.</p>
+          <p>Ainda não há recomendações geradas para o seu perfil. Elas aparecem aqui assim que a administração processar os estudantes cadastrados.</p>
         </div>
       </main>
     </div>
