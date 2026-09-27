@@ -12,6 +12,7 @@ const adminEls = {};
 let students = [];
 let companies = [];
 let vagasAtuaisFiltro = "";
+let relatorioNivelFiltro = "";
 
 function cacheAdminElements() {
   [
@@ -37,6 +38,7 @@ function cacheAdminElements() {
     "importacoes-table-body", "importacoes-empty",
     "btn-gerar-recomendacoes-todos",
     "geracao-lote-modal", "geracao-lote-body", "geracao-lote-close", "geracao-lote-close-btn",
+    "relatorio-rec-filtros", "relatorio-rec-table-body", "relatorio-rec-empty",
     "toast", "btn-logout",
   ].forEach((id) => {
     adminEls[id] = document.getElementById(id);
@@ -68,6 +70,7 @@ const tabLoaders = {
   estudantes: () => Promise.resolve(),
   empresas: loadEmpresas,
   vagas: loadVagas,
+  recomendacoes: loadRelatorioRecomendacoes,
   importacoes: loadImportacoes,
 };
 const tabsLoaded = new Set(["estudantes"]);
@@ -818,6 +821,7 @@ async function handleGerarRecomendacoesTodos() {
     const resumo = await DataService.gerarRecomendacoesParaTodos();
     renderGeracaoLoteResultado(resumo);
     showToast("Geração de recomendações concluída.");
+    await renderRelatorioRecomendacoes();
   } catch (err) {
     adminEls["geracao-lote-body"].innerHTML =
       '<p class="field-hint">' + UI.escapeHtml(err.message || "Não foi possível gerar as recomendações.") + "</p>";
@@ -849,6 +853,74 @@ function renderGeracaoLoteResultado(resumo) {
 
 function closeGeracaoLoteModal() {
   adminEls["geracao-lote-modal"].hidden = true;
+}
+
+/* ---------------------------------------------------------------------
+ * Relatório: todas as recomendações de todos os estudantes (Fase 13)
+ * — para o admin ver quem foi compatível com o quê sem abrir o perfil
+ * de cada estudante.
+ * ------------------------------------------------------------------- */
+async function loadRelatorioRecomendacoes() {
+  await renderRelatorioRecomendacoes();
+}
+
+async function renderRelatorioRecomendacoes() {
+  let recomendacoes = [];
+  try {
+    const resultado = await DataService.listarTodasRecomendacoes(
+      relatorioNivelFiltro ? { nivel: relatorioNivelFiltro } : {}
+    );
+    recomendacoes = Array.isArray(resultado) ? resultado : [];
+  } catch (err) {
+    showToast("Não foi possível carregar o relatório de recomendações.");
+  }
+
+  adminEls["relatorio-rec-table-body"].innerHTML = "";
+  adminEls["relatorio-rec-empty"].hidden = recomendacoes.length > 0;
+
+  const tipoLabels = {
+    aluno_para_vaga: "Vaga",
+    aluno_para_empresa: "Prospecção",
+    vaga_para_aluno: "Caminho inverso (vaga)",
+    empresa_para_aluno: "Caminho inverso (empresa)",
+  };
+
+  recomendacoes.forEach((rec) => {
+    const row = document.createElement("tr");
+
+    const alunoCell = document.createElement("td");
+    alunoCell.textContent = (rec.aluno && (rec.aluno.nome_completo || rec.aluno.matricula)) || "—";
+
+    const cursoCell = document.createElement("td");
+    cursoCell.textContent = (rec.aluno && rec.aluno.curso) || "—";
+
+    const empresaCell = document.createElement("td");
+    empresaCell.textContent = rec.empresa.nome;
+
+    const vagaCell = document.createElement("td");
+    vagaCell.textContent = rec.vaga ? rec.vaga.titulo : "(prospecção, sem vaga)";
+
+    const tipoCell = document.createElement("td");
+    tipoCell.textContent = tipoLabels[rec.tipo] || rec.tipo;
+
+    const nivelCell = document.createElement("td");
+    const nivelBadge = document.createElement("span");
+    nivelBadge.className = "rec-level rec-level--" + (rec.nivel || "baixa");
+    nivelBadge.textContent = rec.nivel || "—";
+    nivelCell.appendChild(nivelBadge);
+
+    const indiceCell = document.createElement("td");
+    indiceCell.textContent = rec.indice_compatibilidade != null ? Math.round(rec.indice_compatibilidade) + "/100" : "—";
+
+    row.appendChild(alunoCell);
+    row.appendChild(cursoCell);
+    row.appendChild(empresaCell);
+    row.appendChild(vagaCell);
+    row.appendChild(tipoCell);
+    row.appendChild(nivelCell);
+    row.appendChild(indiceCell);
+    adminEls["relatorio-rec-table-body"].appendChild(row);
+  });
 }
 
 /* ---------------------------------------------------------------------
@@ -915,6 +987,14 @@ function wireAdminEvents() {
   adminEls["geracao-lote-close-btn"].addEventListener("click", closeGeracaoLoteModal);
   adminEls["geracao-lote-modal"].addEventListener("click", (e) => {
     if (e.target === adminEls["geracao-lote-modal"]) closeGeracaoLoteModal();
+  });
+
+  adminEls["relatorio-rec-filtros"].addEventListener("click", (e) => {
+    const btn = e.target.closest(".rec-filter");
+    if (!btn) return;
+    relatorioNivelFiltro = btn.dataset.nivel;
+    document.querySelectorAll("#relatorio-rec-filtros .rec-filter").forEach((b) => b.classList.toggle("is-active", b === btn));
+    renderRelatorioRecomendacoes();
   });
 
   document.addEventListener("keydown", (e) => {

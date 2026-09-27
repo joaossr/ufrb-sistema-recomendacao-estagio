@@ -277,6 +277,17 @@ const DataService = {
     return apiSend("/admin/recomendacoes/gerar", "POST");
   },
 
+  /** Fase 13: relatório consolidado — todas as recomendações de todos
+   * os alunos, com o aluno já incluído em cada item. `filtros` aceita
+   * { tipo, nivel } opcionais. */
+  listarTodasRecomendacoes(filtros = {}) {
+    const params = new URLSearchParams();
+    if (filtros.tipo) params.set("tipo", filtros.tipo);
+    if (filtros.nivel) params.set("nivel", filtros.nivel);
+    const query = params.toString();
+    return apiGet(`/admin/recomendacoes${query ? "?" + query : ""}`);
+  },
+
   /** Histórico de importações (PDF de convênios, planilha de
    * empresas/vagas, e futuramente COOPC). */
   listImportacoes() {

@@ -85,21 +85,12 @@
           <button type="button" class="admin-tab is-active" data-tab="estudantes" role="tab">Estudantes</button>
           <button type="button" class="admin-tab" data-tab="empresas" role="tab">Empresas &amp; Convênios</button>
           <button type="button" class="admin-tab" data-tab="vagas" role="tab">Vagas</button>
+          <button type="button" class="admin-tab" data-tab="recomendacoes" role="tab">Recomendações</button>
           <button type="button" class="admin-tab" data-tab="importacoes" role="tab">Importações</button>
         </div>
 
         <!-- =============== ABA: ESTUDANTES =============== -->
         <div id="tab-estudantes" class="admin-tab-panel">
-          <section class="card">
-            <div class="card__header">
-              <h2 class="card__title">Recomendações</h2>
-            </div>
-            <p class="field-hint">
-              Processa TODOS os estudantes cadastrados de uma vez: busca vetorial, regras objetivas e análise do Qwen3 para cada um, contra as vagas/empresas cadastradas. Cada estudante só enxerga as recomendações destinadas a ele — o estudante nunca dispara essa ação.
-            </p>
-            <button id="btn-gerar-recomendacoes-todos" type="button" class="btn btn-primary btn-sm" style="margin-top: 10px;">Gerar recomendações para todos os estudantes</button>
-          </section>
-
           <div class="admin-toolbar">
             <p id="admin-summary" class="admin-toolbar__summary"></p>
           </div>
@@ -246,6 +237,49 @@
               </table>
             </div>
             <p id="vagas-empty" class="field-hint" hidden>Nenhuma vaga cadastrada ainda.</p>
+          </section>
+        </div>
+
+        <!-- =============== ABA: RECOMENDAÇÕES =============== -->
+        <div id="tab-recomendacoes" class="admin-tab-panel" hidden>
+          <section class="card">
+            <div class="card__header">
+              <h2 class="card__title">Gerar recomendações</h2>
+            </div>
+            <p class="field-hint">
+              Processa TODOS os estudantes cadastrados de uma vez: busca vetorial, regras objetivas e análise do Qwen3 para cada um, contra as vagas/empresas cadastradas. Cada estudante só enxerga as recomendações destinadas a ele — o estudante nunca dispara essa ação.
+            </p>
+            <button id="btn-gerar-recomendacoes-todos" type="button" class="btn btn-primary btn-sm" style="margin-top: 10px;">Gerar recomendações para todos os estudantes</button>
+          </section>
+
+          <section class="card">
+            <div class="card__header">
+              <h2 class="card__title">Relatório: quem foi compatível com quem</h2>
+            </div>
+            <p class="field-hint">Todas as recomendações já geradas, de todos os estudantes — sem precisar abrir o perfil de cada um.</p>
+            <div class="rec-filters" id="relatorio-rec-filtros">
+              <button type="button" class="rec-filter is-active" data-nivel="">Todos os níveis</button>
+              <button type="button" class="rec-filter" data-nivel="alta">Alto</button>
+              <button type="button" class="rec-filter" data-nivel="media">Médio</button>
+              <button type="button" class="rec-filter" data-nivel="baixa">Baixo</button>
+            </div>
+            <div class="admin-table-wrap">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Estudante</th>
+                    <th>Curso</th>
+                    <th>Empresa</th>
+                    <th>Vaga</th>
+                    <th>Tipo</th>
+                    <th>Nível</th>
+                    <th>Índice</th>
+                  </tr>
+                </thead>
+                <tbody id="relatorio-rec-table-body"></tbody>
+              </table>
+            </div>
+            <p id="relatorio-rec-empty" class="field-hint" hidden>Nenhuma recomendação gerada ainda.</p>
           </section>
         </div>
 
