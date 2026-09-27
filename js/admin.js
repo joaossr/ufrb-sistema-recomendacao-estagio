@@ -71,14 +71,20 @@ function showToast(message) {
  * Abas
  * ------------------------------------------------------------------- */
 const tabLoaders = {
-  estudantes: () => Promise.resolve(),
+  estudantes: loadEstudantes,
   empresas: loadEmpresas,
   vagas: loadVagas,
   recomendacoes: loadRelatorioRecomendacoes,
   importacoes: loadImportacoes,
 };
-const tabsLoaded = new Set(["estudantes"]);
 
+// Recarrega os dados TODA vez que a aba é clicada — nunca guarda em
+// cache "só carrega uma vez". Uma importação de PDF/CSV feita na aba
+// Importações muda empresas/vagas; a geração de recomendações muda o
+// relatório; o cadastro de um estudante muda a aba Estudantes — se a
+// aba já tivesse sido visitada antes dessas ações, ficaria mostrando
+// dado velho até a página ser recarregada manualmente (bug relatado
+// pelo usuário: "importei mas não mudou nada em empresas/vagas").
 function wireTabs() {
   document.querySelectorAll(".admin-tab").forEach((btn) => {
     btn.addEventListener("click", async () => {
@@ -87,10 +93,7 @@ function wireTabs() {
       document.querySelectorAll(".admin-tab-panel").forEach((panel) => {
         panel.hidden = panel.id !== "tab-" + tab;
       });
-      if (!tabsLoaded.has(tab)) {
-        tabsLoaded.add(tab);
-        await tabLoaders[tab]();
-      }
+      await tabLoaders[tab]();
     });
   });
 }
@@ -651,7 +654,10 @@ function populateVagaEmpresaSelect() {
 }
 
 async function loadVagas() {
-  if (!companies.length) await loadEmpresas();
+  // Sempre busca as empresas de novo (não só na primeira vez): o mapa
+  // empresa_id -> nome usado na tabela de vagas precisa refletir
+  // importações feitas depois da última visita a esta aba.
+  await loadEmpresas();
   await renderVagas();
 }
 
