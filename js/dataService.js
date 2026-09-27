@@ -219,6 +219,11 @@ const DataService = {
     return apiSend("/admin/empresas", "POST", payload);
   },
 
+  /** Detalhe de uma empresa (nome, CNPJ, área, segmento, cidade, UF). */
+  getCompanyDetail(empresaId) {
+    return apiGet(`/admin/empresas/${empresaId}`);
+  },
+
   /** Lista os convênios de uma empresa. */
   listConvenios(empresaId) {
     return apiGet(`/admin/empresas/${empresaId}/convenios`);
@@ -286,6 +291,26 @@ const DataService = {
     if (filtros.nivel) params.set("nivel", filtros.nivel);
     const query = params.toString();
     return apiGet(`/admin/recomendacoes${query ? "?" + query : ""}`);
+  },
+
+  /** Fase 14: baixa o PDF de compatibilidade de uma recomendação (dados
+   * do estudante + análise) e dispara o download no navegador — para
+   * o admin enviar esse arquivo à empresa. */
+  async baixarPdfRecomendacao(recomendacaoId) {
+    const { ok, blob, filename, networkError, detail } = await AuthService.apiDownload(
+      `/admin/recomendacoes/${recomendacaoId}/pdf`
+    );
+    if (networkError) throw new Error("Não foi possível conectar ao servidor. Tente novamente.");
+    if (!ok) throw new Error((detail && detail.detail) || "Não foi possível gerar o PDF.");
+
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename || `compatibilidade_${recomendacaoId}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
   },
 
   /** Histórico de importações (PDF de convênios, planilha de

@@ -20,13 +20,15 @@ function cacheAdminElements() {
     "admin-detail-modal", "admin-detail-title", "admin-detail-body",
     "admin-detail-close", "admin-detail-close-btn",
     "empresa-nome-input", "empresa-cnpj-input", "btn-criar-empresa",
-    "empresas-table-body", "empresas-empty",
+    "empresas-search", "empresas-table-body", "empresas-empty",
+    "empresa-detail-modal", "empresa-detail-title", "empresa-detail-body",
+    "empresa-detail-close", "empresa-detail-close-btn",
     "convenios-modal", "convenios-modal-title", "convenios-modal-close", "convenios-modal-close-btn",
     "convenio-processo-input", "convenio-data-inicio-input", "convenio-data-fim-input",
     "btn-criar-convenio", "convenios-lista",
     "vaga-empresa-select", "vaga-titulo-input", "vaga-cursos-input", "vaga-tecnologias-input",
     "vaga-modalidade-select", "vaga-bolsa-input", "vaga-descricao-input", "btn-criar-vaga",
-    "vagas-filtros", "vagas-table-body", "vagas-empty",
+    "vagas-filtros", "vagas-search", "vagas-table-body", "vagas-empty",
     "caminho-inverso-modal", "caminho-inverso-title", "caminho-inverso-body",
     "caminho-inverso-close", "caminho-inverso-close-btn",
     "importacao-dropzone", "btn-select-importacao-file", "importacao-file-input",
@@ -39,6 +41,8 @@ function cacheAdminElements() {
     "btn-gerar-recomendacoes-todos",
     "geracao-lote-modal", "geracao-lote-body", "geracao-lote-close", "geracao-lote-close-btn",
     "relatorio-rec-filtros", "relatorio-rec-table-body", "relatorio-rec-empty",
+    "recomendacao-detalhe-modal", "recomendacao-detalhe-title", "recomendacao-detalhe-body",
+    "recomendacao-detalhe-close", "recomendacao-detalhe-close-btn", "btn-baixar-pdf-recomendacao",
     "toast", "btn-logout",
   ].forEach((id) => {
     adminEls[id] = document.getElementById(id);
@@ -374,10 +378,22 @@ async function loadEmpresas() {
 }
 
 function renderEmpresas() {
-  adminEls["empresas-table-body"].innerHTML = "";
-  adminEls["empresas-empty"].hidden = companies.length > 0;
+  const termo = adminEls["empresas-search"].value.trim().toLowerCase();
+  const filtradas = termo
+    ? companies.filter((e) => {
+        const cnpjDigits = (e.cnpj || "").replace(/\D/g, "");
+        const termoDigits = termo.replace(/\D/g, "");
+        return (
+          e.nome.toLowerCase().includes(termo) ||
+          (termoDigits && cnpjDigits.includes(termoDigits))
+        );
+      })
+    : companies;
 
-  companies.forEach((empresa) => {
+  adminEls["empresas-table-body"].innerHTML = "";
+  adminEls["empresas-empty"].hidden = filtradas.length > 0;
+
+  filtradas.forEach((empresa) => {
     const row = document.createElement("tr");
 
     const nameCell = document.createElement("td");
@@ -396,9 +412,15 @@ function renderEmpresas() {
     dateCell.textContent = new Date(empresa.created_at).toLocaleDateString("pt-BR");
 
     const actionsCell = document.createElement("td");
+    const detailBtn = document.createElement("button");
+    detailBtn.type = "button";
+    detailBtn.className = "btn btn-secondary btn-sm";
+    detailBtn.textContent = "Ver detalhes";
+    detailBtn.addEventListener("click", () => openEmpresaDetailModal(empresa));
     const convBtn = document.createElement("button");
     convBtn.type = "button";
     convBtn.className = "btn btn-secondary btn-sm";
+    convBtn.style.marginLeft = "8px";
     convBtn.textContent = "Convênios";
     convBtn.addEventListener("click", () => openConveniosModal(empresa));
     const prospBtn = document.createElement("button");
@@ -407,6 +429,7 @@ function renderEmpresas() {
     prospBtn.style.marginLeft = "8px";
     prospBtn.textContent = "Buscar estudantes compatíveis";
     prospBtn.addEventListener("click", () => gerarCaminhoInversoEmpresa(empresa));
+    actionsCell.appendChild(detailBtn);
     actionsCell.appendChild(convBtn);
     actionsCell.appendChild(prospBtn);
 
@@ -436,6 +459,85 @@ async function handleCriarEmpresa() {
   } catch (err) {
     showToast(err.message || "Não foi possível cadastrar a empresa.");
   }
+}
+
+async function openEmpresaDetailModal(empresa) {
+  adminEls["empresa-detail-title"].textContent = empresa.nome;
+  adminEls["empresa-detail-body"].innerHTML = '<p class="field-hint">Carregando...</p>';
+  adminEls["empresa-detail-modal"].hidden = false;
+
+  let convenios = [];
+  let vagas = [];
+  try {
+    [convenios, vagas] = await Promise.all([
+      DataService.listConvenios(empresa.id),
+      DataService.listVagasDaEmpresa(empresa.id),
+    ]);
+  } catch (err) {
+    adminEls["empresa-detail-body"].innerHTML = '<p class="field-hint">Não foi possível carregar os detalhes desta empresa.</p>';
+    return;
+  }
+
+  let html = "";
+
+  html += '<div class="admin-detail-section">';
+  html += '<h3 class="admin-detail-section__title">Identificação</h3>';
+  html += detailRow("Nome", empresa.nome);
+  html += detailRow("CNPJ", empresa.cnpj);
+  html += detailRow("Área", empresa.area);
+  html += detailRow("Segmento", empresa.segmento);
+  html += detailRow("Cidade", empresa.cidade);
+  html += detailRow("UF", empresa.uf);
+  html += detailRow("Cadastrada em", new Date(empresa.created_at).toLocaleDateString("pt-BR"));
+  html += "</div>";
+
+  html += '<div class="admin-detail-section">';
+  html += '<h3 class="admin-detail-section__title">Convênios (' + convenios.length + ')</h3>';
+  if (convenios.length) {
+    convenios.forEach((c) => {
+      const badgeClass = "rec-convenio-badge--" + (c.status || "indeterminado");
+      html += '<div class="admin-detail-row">';
+      html += '<span class="admin-detail-row__label">' + UI.escapeHtml(c.processo || "(sem nº de processo)") + "</span>";
+      html +=
+        '<span class="admin-detail-row__value"><span class="rec-convenio-badge ' + badgeClass + '">' +
+        UI.escapeHtml(c.status) + "</span> · " + UI.escapeHtml(c.data_fim_original || "sem data") + "</span>";
+      html += "</div>";
+    });
+  } else {
+    html += '<p class="field-hint">Nenhum convênio registrado.</p>';
+  }
+  html += "</div>";
+
+  html += '<div class="admin-detail-section">';
+  html += '<h3 class="admin-detail-section__title">Vagas (' + vagas.length + ')</h3>';
+  if (vagas.length) {
+    vagas.forEach((v) => {
+      html += '<div class="lattes-preview-project">';
+      html += '<div class="lattes-preview-project__name">' + UI.escapeHtml(v.titulo) + "</div>";
+      const meta = [v.modalidade, v.localizacao, v.bolsa, v.carga_horaria].filter(Boolean).join(" · ");
+      if (meta) html += '<p class="field-hint" style="margin:2px 0 6px;">' + UI.escapeHtml(meta) + "</p>";
+      const statusBadge = '<span class="tag-pill' + (v.status === "ativa" ? "" : " tag-pill--muted") + '">' + (v.status === "ativa" ? "Ativa" : "Encerrada") + "</span>";
+      html += statusBadge;
+      if (v.descricao) html += '<p class="lattes-preview-project__desc" style="margin-top:6px;">' + UI.escapeHtml(v.descricao) + "</p>";
+      if (v.tecnologias && v.tecnologias.length) {
+        html += '<div class="chip-list-preview" style="margin-top:8px;">';
+        v.tecnologias.forEach((t) => {
+          html += '<span class="tag-pill">' + UI.escapeHtml(t) + "</span>";
+        });
+        html += "</div>";
+      }
+      html += "</div>";
+    });
+  } else {
+    html += '<p class="field-hint">Nenhuma vaga cadastrada para esta empresa.</p>';
+  }
+  html += "</div>";
+
+  adminEls["empresa-detail-body"].innerHTML = html;
+}
+
+function closeEmpresaDetailModal() {
+  adminEls["empresa-detail-modal"].hidden = true;
 }
 
 let conveniosModalEmpresa = null;
@@ -561,12 +663,20 @@ async function renderVagas() {
     showToast("Não foi possível carregar as vagas.");
   }
 
-  adminEls["vagas-table-body"].innerHTML = "";
-  adminEls["vagas-empty"].hidden = vagas.length > 0;
-
   const empresasPorId = new Map(companies.map((e) => [e.id, e.nome]));
 
-  vagas.forEach((vaga) => {
+  const termo = adminEls["vagas-search"].value.trim().toLowerCase();
+  const filtradas = termo
+    ? vagas.filter((v) => {
+        const nomeEmpresa = (empresasPorId.get(v.empresa_id) || "").toLowerCase();
+        return v.titulo.toLowerCase().includes(termo) || nomeEmpresa.includes(termo);
+      })
+    : vagas;
+
+  adminEls["vagas-table-body"].innerHTML = "";
+  adminEls["vagas-empty"].hidden = filtradas.length > 0;
+
+  filtradas.forEach((vaga) => {
     const row = document.createElement("tr");
 
     const titleCell = document.createElement("td");
@@ -912,6 +1022,14 @@ async function renderRelatorioRecomendacoes() {
     const indiceCell = document.createElement("td");
     indiceCell.textContent = rec.indice_compatibilidade != null ? Math.round(rec.indice_compatibilidade) + "/100" : "—";
 
+    const actionsCell = document.createElement("td");
+    const detailBtn = document.createElement("button");
+    detailBtn.type = "button";
+    detailBtn.className = "btn btn-secondary btn-sm";
+    detailBtn.textContent = "Ver detalhes";
+    detailBtn.addEventListener("click", () => openRecomendacaoDetalheModal(rec));
+    actionsCell.appendChild(detailBtn);
+
     row.appendChild(alunoCell);
     row.appendChild(cursoCell);
     row.appendChild(empresaCell);
@@ -919,8 +1037,128 @@ async function renderRelatorioRecomendacoes() {
     row.appendChild(tipoCell);
     row.appendChild(nivelCell);
     row.appendChild(indiceCell);
+    row.appendChild(actionsCell);
     adminEls["relatorio-rec-table-body"].appendChild(row);
   });
+}
+
+/* ---------------------------------------------------------------------
+ * Modal estruturado: aluno + empresa + compatibilidade, com botão de
+ * baixar o PDF para enviar à empresa (Fase 14).
+ * ------------------------------------------------------------------- */
+let recomendacaoDetalheAtual = null;
+
+async function openRecomendacaoDetalheModal(rec) {
+  recomendacaoDetalheAtual = rec;
+  adminEls["recomendacao-detalhe-title"].textContent = "Recomendação — " + (rec.aluno ? rec.aluno.nome_completo || rec.aluno.matricula : "");
+  adminEls["recomendacao-detalhe-body"].innerHTML = '<p class="field-hint">Carregando...</p>';
+  adminEls["recomendacao-detalhe-modal"].hidden = false;
+
+  let alunoDetalhe = null;
+  let empresaDetalhe = null;
+  try {
+    [alunoDetalhe, empresaDetalhe] = await Promise.all([
+      rec.aluno ? DataService.getStudentDetail(rec.aluno.id) : Promise.resolve(null),
+      DataService.getCompanyDetail(rec.empresa.id),
+    ]);
+  } catch (err) {
+    adminEls["recomendacao-detalhe-body"].innerHTML = '<p class="field-hint">Não foi possível carregar os detalhes.</p>';
+    return;
+  }
+
+  const nivelLabels = { alta: "Alta compatibilidade", media: "Compatibilidade média", baixa: "Baixa compatibilidade" };
+  let html = "";
+
+  html += '<div class="admin-detail-section">';
+  html += '<h3 class="admin-detail-section__title">Estudante — dados de contato</h3>';
+  if (alunoDetalhe) {
+    const p = alunoDetalhe.perfil;
+    html += detailRow("Nome completo", p.full_name);
+    html += detailRow("Matrícula", p.registration_number);
+    html += detailRow("Curso", p.course);
+    html += detailRow("Semestre atual", p.semester);
+    html += detailRow("E-mail", p.email);
+    html += detailRow("Telefone", p.phone);
+    html += detailRow("LinkedIn", p.linkedin_url);
+    if (alunoDetalhe.tecnologias.length) {
+      html += '<div class="chip-list-preview" style="margin-top:8px;">';
+      alunoDetalhe.tecnologias.forEach((t) => {
+        html += '<span class="tag-pill">' + UI.escapeHtml(t.name) + " · " + UI.escapeHtml(t.level) + "</span>";
+      });
+      html += "</div>";
+    }
+  } else {
+    html += '<p class="field-hint">Não foi possível carregar os dados do estudante.</p>';
+  }
+  html += "</div>";
+
+  html += '<div class="admin-detail-section">';
+  html += '<h3 class="admin-detail-section__title">Empresa / vaga</h3>';
+  if (empresaDetalhe) {
+    html += detailRow("Empresa", empresaDetalhe.nome);
+    html += detailRow("CNPJ", empresaDetalhe.cnpj);
+    html += detailRow("Área", empresaDetalhe.area);
+    html += detailRow("Cidade/UF", [empresaDetalhe.cidade, empresaDetalhe.uf].filter(Boolean).join(" - "));
+  }
+  if (rec.vaga) {
+    html += detailRow("Vaga", rec.vaga.titulo);
+    html += detailRow("Modalidade", rec.vaga.modalidade);
+    html += detailRow("Localização", rec.vaga.localizacao);
+    html += detailRow("Bolsa", rec.vaga.bolsa);
+    html += detailRow("Carga horária", rec.vaga.carga_horaria);
+  } else {
+    html += '<p class="field-hint">Prospecção — empresa compatível sem vaga ativa no momento.</p>';
+  }
+  html += "</div>";
+
+  html += '<div class="admin-detail-section">';
+  html += '<h3 class="admin-detail-section__title">Análise de compatibilidade</h3>';
+  html +=
+    '<span class="rec-level rec-level--' + (rec.nivel || "baixa") + '">' +
+    UI.escapeHtml(nivelLabels[rec.nivel] || rec.nivel || "—") + "</span>";
+  html += '<p class="field-hint" style="margin-top:8px;">Índice: ' + (rec.indice_compatibilidade != null ? Math.round(rec.indice_compatibilidade) + "/100" : "—") + "</p>";
+
+  if (rec.pontos_compativeis && rec.pontos_compativeis.length) {
+    html += '<p style="margin-bottom:4px;"><b>Pontos compatíveis</b></p>';
+    html += '<div class="chip-list-preview">';
+    rec.pontos_compativeis.forEach((p) => (html += '<span class="tag-pill">' + UI.escapeHtml(p) + "</span>"));
+    html += "</div>";
+  }
+  if (rec.pontos_parciais && rec.pontos_parciais.length) {
+    html += '<p style="margin:8px 0 4px;"><b>Compatibilidade parcial</b></p>';
+    html += '<div class="chip-list-preview">';
+    rec.pontos_parciais.forEach((p) => (html += '<span class="tag-pill">' + UI.escapeHtml(p) + "</span>"));
+    html += "</div>";
+  }
+  if (rec.lacunas && rec.lacunas.length) {
+    html += '<p style="margin:8px 0 4px;"><b>Lacunas</b></p>';
+    html += '<div class="chip-list-preview">';
+    rec.lacunas.forEach((p) => (html += '<span class="tag-pill tag-pill--muted">' + UI.escapeHtml(p) + "</span>"));
+    html += "</div>";
+  }
+  if (rec.justificativa) {
+    html += '<p style="margin-top:10px;">' + UI.escapeHtml(rec.justificativa) + "</p>";
+  }
+  html += "</div>";
+
+  adminEls["recomendacao-detalhe-body"].innerHTML = html;
+}
+
+function closeRecomendacaoDetalheModal() {
+  adminEls["recomendacao-detalhe-modal"].hidden = true;
+  recomendacaoDetalheAtual = null;
+}
+
+async function handleBaixarPdfRecomendacao() {
+  if (!recomendacaoDetalheAtual) return;
+  adminEls["btn-baixar-pdf-recomendacao"].disabled = true;
+  try {
+    await DataService.baixarPdfRecomendacao(recomendacaoDetalheAtual.id);
+  } catch (err) {
+    showToast(err.message || "Não foi possível gerar o PDF.");
+  } finally {
+    adminEls["btn-baixar-pdf-recomendacao"].disabled = false;
+  }
 }
 
 /* ---------------------------------------------------------------------
@@ -937,6 +1175,13 @@ function wireAdminEvents() {
   });
 
   adminEls["btn-criar-empresa"].addEventListener("click", handleCriarEmpresa);
+  adminEls["empresas-search"].addEventListener("input", () => renderEmpresas());
+
+  adminEls["empresa-detail-close"].addEventListener("click", closeEmpresaDetailModal);
+  adminEls["empresa-detail-close-btn"].addEventListener("click", closeEmpresaDetailModal);
+  adminEls["empresa-detail-modal"].addEventListener("click", (e) => {
+    if (e.target === adminEls["empresa-detail-modal"]) closeEmpresaDetailModal();
+  });
 
   adminEls["convenios-modal-close"].addEventListener("click", closeConveniosModal);
   adminEls["convenios-modal-close-btn"].addEventListener("click", closeConveniosModal);
@@ -953,6 +1198,7 @@ function wireAdminEvents() {
     document.querySelectorAll("#vagas-filtros .rec-filter").forEach((b) => b.classList.toggle("is-active", b === btn));
     renderVagas();
   });
+  adminEls["vagas-search"].addEventListener("input", () => renderVagas());
 
   adminEls["caminho-inverso-close"].addEventListener("click", closeCaminhoInversoModal);
   adminEls["caminho-inverso-close-btn"].addEventListener("click", closeCaminhoInversoModal);
@@ -997,12 +1243,21 @@ function wireAdminEvents() {
     renderRelatorioRecomendacoes();
   });
 
+  adminEls["recomendacao-detalhe-close"].addEventListener("click", closeRecomendacaoDetalheModal);
+  adminEls["recomendacao-detalhe-close-btn"].addEventListener("click", closeRecomendacaoDetalheModal);
+  adminEls["recomendacao-detalhe-modal"].addEventListener("click", (e) => {
+    if (e.target === adminEls["recomendacao-detalhe-modal"]) closeRecomendacaoDetalheModal();
+  });
+  adminEls["btn-baixar-pdf-recomendacao"].addEventListener("click", handleBaixarPdfRecomendacao);
+
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
     closeDetailModal();
+    closeEmpresaDetailModal();
     closeConveniosModal();
     closeCaminhoInversoModal();
     closeGeracaoLoteModal();
+    closeRecomendacaoDetalheModal();
   });
 }
 

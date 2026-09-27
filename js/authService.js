@@ -103,9 +103,44 @@ async function authApiUpload(path, file, fieldName = "file") {
   return { ok: response.ok, status: response.status, data };
 }
 
+/** Download de arquivo binário (ex.: PDF) — a resposta não é JSON,
+ * então authApiFetch não serve aqui. Extrai o nome do arquivo do
+ * header Content-Disposition quando o backend o envia. */
+async function authApiDownload(path) {
+  const session = authReadSession();
+  const headers = {};
+  if (session && session.token) {
+    headers["Authorization"] = "Bearer " + session.token;
+  }
+
+  let response;
+  try {
+    response = await fetch(API_BASE_URL + path, { method: "GET", headers });
+  } catch (err) {
+    return { ok: false, status: 0, blob: null, filename: null, networkError: true };
+  }
+
+  if (!response.ok) {
+    let detail = null;
+    try {
+      detail = await response.json();
+    } catch (err) {
+      detail = null;
+    }
+    return { ok: false, status: response.status, blob: null, filename: null, detail };
+  }
+
+  const disposition = response.headers.get("Content-Disposition") || "";
+  const match = disposition.match(/filename="?([^"]+)"?/);
+  const filename = match ? match[1] : null;
+  const blob = await response.blob();
+  return { ok: true, status: response.status, blob, filename };
+}
+
 const AuthService = {
   apiFetch: authApiFetch,
   apiUpload: authApiUpload,
+  apiDownload: authApiDownload,
 
   async register({ matricula, email, password, confirmPassword }) {
     if (!password || password.length < 6) {
